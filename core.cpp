@@ -1,4 +1,5 @@
 #include "core.h"
+#include "tinyxml2.h"
 
 // -------------------------------------------------------------------------
 // The main command line parser
@@ -87,10 +88,70 @@ std::string subsonicAPI::assemble_url(std::string API_signature){
   return full_url;
 }
 
+std::string subsonicAPI::assemble_url(std::string API_signature, std::vector<std::pair<std::string, std::string>> *parameters){
+  std::string full_url = subsonicAPI::baseurl + API_signature + "?u=" + subsonicAPI::username +
+                         "&p=" + subsonicAPI::password + "&c=" + subsonicAPI::application_name;
+
+  for (std::pair<std::string, std::string> element : *parameters){full_url = full_url + "&" + element.first + "=" + element.second;}
+  return full_url;
+}
+
+void subsonicAPI::getXML(){
+  subsonicAPI::xml.Parse(subsonicAPI::last_output.c_str());
+}
+
+void subsonicAPI::getXML(std::string raw_xml){
+  subsonicAPI::xml.Parse(raw_xml.c_str());
+}
+
+void subsonicAPI::Print(){
+  std::cout<<subsonicAPI::last_output<<std::endl;
+}
+
 // API Functions
 std::string subsonicAPI::getMusicFolders(){
-  return subsonicAPI::cr.perform_request(subsonicAPI::assemble_url("getMusicFolders"));
+  subsonicAPI::last_output = subsonicAPI::cr.perform_request(subsonicAPI::assemble_url("getMusicFolders"));
+  subsonicAPI::getXML();
+  return subsonicAPI::last_output;
+}
 
+std::string subsonicAPI::getArtists(){
+  subsonicAPI::last_output = subsonicAPI::cr.perform_request(subsonicAPI::assemble_url("getArtists"));
+  subsonicAPI::getXML();
+  return subsonicAPI::last_output;
+}
+
+std::string subsonicAPI::getMusicDirectory(std::string id){
+  std::pair<std::string, std::string> p;
+  p.first = "id";
+  p.second = id;
+  std::vector<std::pair<std::string, std::string>> parameters {p};
+  subsonicAPI::last_output = subsonicAPI::cr.perform_request(subsonicAPI::assemble_url("getMusicDirectory", &parameters));
+  subsonicAPI::getXML();
+  return subsonicAPI::last_output;
+}
+
+std::string subsonicAPI::getSong(std::string id){
+  std::pair<std::string, std::string> p;
+  p.first = "id";
+  p.second = id;
+  std::vector<std::pair<std::string, std::string>> parameters {p};
+  subsonicAPI::last_output = subsonicAPI::cr.perform_request(subsonicAPI::assemble_url("getSong", &parameters));
+  subsonicAPI::getXML();
+  return subsonicAPI::last_output;
+}
+
+BufferStruct subsonicAPI::download(std::string id){
+  std::pair<std::string, std::string> p;
+  p.first = "id";
+  p.second = id;
+  std::vector<std::pair<std::string, std::string>> parameters {p};
+  BufferStruct data;
+  subsonicAPI::cr.perform_download(subsonicAPI::assemble_url("download", &parameters), &data);
+
+  /*std::ofstream download;
+  download.open("RiverFlowsInYou.flac", std::ios::out | std::ios::binary);
+  download.write(data.buffer, data.size);*/
 }
 /*##############################################################################*/
 
@@ -116,5 +177,12 @@ std::string curlwrapper::perform_request(std::string url){
   curlwrapper::curlresult = curl_easy_perform(curlwrapper::curlhandle);
   std::string output = (curlwrapper::curloutput).buffer;
   return output;
+}
+
+void curlwrapper::perform_download(std::string url, BufferStruct *data){
+  curl_easy_setopt(curlwrapper::curlhandle, CURLOPT_WRITEDATA, (void *)(data));
+  curlwrapper::curlresult = curl_easy_setopt(curlwrapper::curlhandle, CURLOPT_URL, url.c_str());
+  curlwrapper::curlresult = curl_easy_perform(curlwrapper::curlhandle);
+  curl_easy_setopt(curlwrapper::curlhandle, CURLOPT_WRITEDATA, (void *)&(curlwrapper::curloutput));
 }
 /*##############################################################################*/

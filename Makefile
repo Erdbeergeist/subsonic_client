@@ -1,6 +1,6 @@
 BIN    = subsonic-client
-OBJ    = subsonic-client.o core.o
-HEADER = core.h
+OBJ    = subsonic-client.o core.o tinyxml2.o
+HEADER = core.h tinyxml2.h
 
 # Compiler options
 CXX = g++-7

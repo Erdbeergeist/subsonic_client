@@ -18,7 +18,7 @@
 #include <tuple>
 #include <typeinfo>
 #include <curl/curl.h>
-
+#include "tinyxml2.h"
 
 //Argument Parsing
 error_t parse_opt(int key, char *arg, struct argp_state *state);
@@ -44,6 +44,7 @@ class curlwrapper{
 
     curlwrapper();
     std::string perform_request(std::string url);
+    void perform_download(std::string url, BufferStruct *data);
 
     ~curlwrapper();
 
@@ -70,16 +71,27 @@ class subsonicAPI{
     std::string get_username();
     std::string get_password();
 
+    void getXML();
+    void getXML(std::string);
+    void Print();
+
+    tinyxml2::XMLDocument xml;
+    std::string last_output = "";
+
     // API Functions
     std::string getMusicFolders();
+    std::string getArtists();
+    std::string getMusicDirectory(std::string id);
+    std::string getSong(std::string id);
+    BufferStruct download(std::string id);
     //
 
+    std::string assemble_url(std::string API_signature, std::vector<std::pair<std::string, std::string>> *parameters);
     ~subsonicAPI();
 
   private:
 
     std::string assemble_url(std::string API_signature);
-    std::string assemble_url(std::string API_signature, std::vector<std::string> parameters);
 
     std::string baseurl = "";
     std::string username = "";
