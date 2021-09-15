@@ -77,7 +77,7 @@ ssize_t vlc_read_callback(void *opaque, unsigned char* buffer, size_t length){
   //download.write(buff->buffer,buff->size);
 
   std::memcpy(buffer, &data[buff->last_read_byte_index], bytes_to_copy);
-  std::cout<<"here we are"<<std::endl;
+  //std::cout<<"here we are"<<std::endl;
   buff->last_read_byte_index = buff->last_read_byte_index + bytes_to_copy;
 
   return bytes_to_copy;
