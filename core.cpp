@@ -1,5 +1,6 @@
 #include "core.h"
 #include "tinyxml2.h"
+#include <vlc/vlc.h>
 
 // -------------------------------------------------------------------------
 // The main command line parser
@@ -36,6 +37,56 @@ size_t WriteMemoryCallback(void *ptr, size_t size, size_t nmemb, void *data){
     }
     return realsize;
 }
+
+/*###############################livbVLC Callbacks##############################*/
+int vlc_open_callback(void* opaque, void** datap, uint64_t* sizep){
+  BufferStruct *buff = static_cast<BufferStruct*> (opaque);
+  *sizep = buff->size;
+  *datap = buff;
+  buff->last_read_byte_index = 0;
+  return 0;
+}
+
+int vlc_seek_callback(void *opaque, size_t offset){
+  BufferStruct *buff = (BufferStruct *) (opaque);
+  if (offset<=buff->size){
+    buff->last_read_byte_index = offset;
+    return 0;
+  }
+  else return -1;
+}
+
+
+ssize_t vlc_read_callback(void *opaque, unsigned char* buffer, size_t length){
+  BufferStruct *buff = (BufferStruct *) (opaque);
+
+  size_t bytes_to_copy = 0;
+  size_t bytes_copied = buff->last_read_byte_index;
+  size_t bytes_left = buff->size - bytes_copied;
+
+
+  if (bytes_left >= length) bytes_to_copy = length;
+  else if (bytes_left < length) bytes_to_copy = bytes_left;
+  else return 0;
+
+  char * data = buff->buffer;
+  //std::cout<<&data<<std::endl;
+  //std::cout<<buff->last_read_byte_index<<std::endl;
+  //std::ofstream download;
+  //download.open("RiverFlowsInYou.flac", std::ios::out | std::ios::binary);
+  //download.write(buff->buffer,buff->size);
+
+  std::memcpy(buffer, &data[buff->last_read_byte_index], bytes_to_copy);
+  std::cout<<"here we are"<<std::endl;
+  buff->last_read_byte_index = buff->last_read_byte_index + bytes_to_copy;
+
+  return bytes_to_copy;
+}
+
+void vlc_close_callback(void* opaque){
+}
+
+/*##############################################################################*/
 
 /*#################################SUBSONIC_API#################################*/
 subsonicAPI::subsonicAPI(){
@@ -147,11 +198,11 @@ BufferStruct subsonicAPI::download(std::string id){
   p.second = id;
   std::vector<std::pair<std::string, std::string>> parameters {p};
   BufferStruct data;
-  subsonicAPI::cr.perform_download(subsonicAPI::assemble_url("download", &parameters), &data);
+  subsonicAPI::cr.perform_download(subsonicAPI::assemble_url("download", &parameters), &(subsonicAPI::last_song));
 
-  /*std::ofstream download;
-  download.open("RiverFlowsInYou.flac", std::ios::out | std::ios::binary);
-  download.write(data.buffer, data.size);*/
+  //std::ofstream download;
+  //download.open("RiverFlowsInYou.flac", std::ios::out | std::ios::binary);
+  //download.write(data.buffer, data.size);
 }
 /*##############################################################################*/
 

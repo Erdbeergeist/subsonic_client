@@ -2,6 +2,7 @@
 #define CORE_H
 
 #include <stdlib.h>
+#include <cstdint>
 #include <sstream>
 #include <vector>
 #include <iostream>
@@ -17,8 +18,12 @@
 #include <argp.h>
 #include <tuple>
 #include <typeinfo>
+#include <unistd.h>
+#include <sys/types.h>
 #include <curl/curl.h>
 #include "tinyxml2.h"
+#include "vlc/vlc.h"
+//#include "vlc/libvlc_media.h"
 
 //Argument Parsing
 error_t parse_opt(int key, char *arg, struct argp_state *state);
@@ -33,11 +38,15 @@ static struct argp_option cmdline_options[] = {
 struct BufferStruct{
     char * buffer = NULL;
     size_t size = 0;
+    size_t last_read_byte_index = 0;
 };
 
 //Callback Function for CURL
 size_t WriteMemoryCallback(void *ptr, size_t size, size_t nmemb, void *data);
-
+int vlc_open_callback(void* opaque, void** datap, uint64_t* sizep);
+void vlc_close_callback(void* opaque);
+ssize_t vlc_read_callback(void *opaque, unsigned char* buffer, size_t length);
+int vlc_seek_callback(void *opaque, size_t offset);
 
 class curlwrapper{
   public:
@@ -57,6 +66,7 @@ class curlwrapper{
 };
 
 class subsonicAPI{
+
   public:
 
     subsonicAPI();
@@ -84,14 +94,16 @@ class subsonicAPI{
     std::string getMusicDirectory(std::string id);
     std::string getSong(std::string id);
     BufferStruct download(std::string id);
+
+    BufferStruct last_song;
     //
 
-    std::string assemble_url(std::string API_signature, std::vector<std::pair<std::string, std::string>> *parameters);
     ~subsonicAPI();
 
   private:
 
     std::string assemble_url(std::string API_signature);
+    std::string assemble_url(std::string API_signature, std::vector<std::pair<std::string, std::string>> *parameters);
 
     std::string baseurl = "";
     std::string username = "";
