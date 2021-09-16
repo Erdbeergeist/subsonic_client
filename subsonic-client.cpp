@@ -1,6 +1,8 @@
-#include "core.h"
-#include "tinyxml2.h"
-#include <vlc/vlc.h>
+#include "subsonic-client.h"
+#include "mediaObjects.h"
+#include "curlwrapper.h"
+#include "subsonicAPI.h"
+
 
 int main(int argc, char *argv[]) {
 
@@ -8,20 +10,21 @@ int main(int argc, char *argv[]) {
 
     subsonicAPI sAPI();
 
-  //  sAPI.getArtists();
+    //sAPI.getArtists();
   //  sAPI.getMusicDirectory("artist-95533");
     //sAPI.Print();
-  //  sAPI.getMusicDirectory("album-47767");//track-38004
-  //  sAPI.Print();
-  //  sAPI.getSong("track-38004");//track-38004
-  //  sAPI.Print();
+   //sAPI.getMusicDirectory("album-47767");//track-38004
+    //sAPI.Print();
+    sAPI.getSong("track-47768");//track-38004
+    sAPI.Print();
 
-    BufferStruct song;
-    song = sAPI.download("track-47768");
 
-    //std::ofstream download;
-    //download.open("RiverFlowsInYou.flac", std::ios::out | std::ios::binary);
-    //download.write(sAPI.last_song.buffer,sAPI.last_song.size);
+    memoryMediaObject* song = new memoryMediaObject();
+    std::cout<<"Downloading..."<<std::endl;
+    sAPI.download("track-47768", song);
+  // std::ofstream download;
+//    download.open("RiverFlowsInYou.flac", std::ios::out | std::ios::binary);
+  //  download.write(&song->data.buffer, song->data.size);
     //char* buffer;
     //char *data = song.buffer;
     //memcpy(buffer, data, 1);
@@ -35,7 +38,7 @@ int main(int argc, char *argv[]) {
                                    vlc_read_callback,
                                    vlc_seek_callback,
                                    NULL,
-                                   &sAPI.last_song);
+                                   &song->data);
     mp = libvlc_media_player_new_from_media (m);
     //std::ofstream download;
     //download.open("RiverFlowsInYou.flac", std::ios::out | std::ios::binary);
