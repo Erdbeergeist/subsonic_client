@@ -40,9 +40,7 @@ int main(int argc, char *argv[]) {
                                    NULL,
                                    &song->data);
     mp = libvlc_media_player_new_from_media (m);
-    //std::ofstream download;
-    //download.open("RiverFlowsInYou.flac", std::ios::out | std::ios::binary);
-  //  download.write(sAPI.last_song.buffer,sAPI.last_song.size);
+
     std::cout<<"Playing..."<<std::endl;
     libvlc_media_player_play(mp);
     sleep(400);
