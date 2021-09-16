@@ -2,13 +2,13 @@
 #include "mediaObjects.h"
 #include "curlwrapper.h"
 #include "subsonicAPI.h"
-
+#include "vlcwrapper.h"
 
 int main(int argc, char *argv[]) {
 
     tinyxml2::XMLDocument xml;
 
-    subsonicAPI sAPI();
+    subsonicAPI sAPI;
 
     //sAPI.getArtists();
   //  sAPI.getMusicDirectory("artist-95533");

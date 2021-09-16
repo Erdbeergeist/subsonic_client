@@ -14,4 +14,4 @@ $(BIN): $(OBJ)
 
 .PHONY: clean
 clean:
-	rm -f $(BIN) subsonic-client.o
+	rm -f $(BIN) subsonic-client.o subsonic-client.o core.o subsonicAPI.o mediaObjects.o curlwrapper.o vlcwrapper.o tinyxml2.o
