@@ -24,6 +24,7 @@ class subsonicAPI{
     void getXML(std::string);
     void Print();
 
+
     tinyxml2::XMLDocument xml;
     std::string last_output = "";
 

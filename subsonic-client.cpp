@@ -8,11 +8,13 @@ int main(int argc, char *argv[]) {
 
     tinyxml2::XMLDocument xml;
 
-    subsonicAPI sAPI;
+    subsonicAPI sAPI();
+    mediaLibrary mediaLib;
 
-    //sAPI.getArtists();
+    mediaLib.scanLibrary(&sAPI);
+
+
   //  sAPI.getMusicDirectory("artist-95533");
-    //sAPI.Print();
    //sAPI.getMusicDirectory("album-47767");//track-38004
     //sAPI.Print();
     sAPI.getSong("track-47768");//track-38004
@@ -48,10 +50,4 @@ int main(int argc, char *argv[]) {
     libvlc_media_release(m);
     libvlc_media_player_release(mp);
     libvlc_release(inst);
-    /*for(tinyxml2::XMLElement* node=xml.FirstChildElement()->FirstChildElement()->FirstChildElement();
-    node;
-    node=node->NextSiblingElement()){
-        std::cout<<node->GetText()<<std::endl;
-            //do something
-    }*/
 }

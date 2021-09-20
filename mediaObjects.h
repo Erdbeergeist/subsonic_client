@@ -3,6 +3,8 @@
 
 #include "subsonic-client.h"
 
+class subsonicAPI;
+
 //Buffer Struct to hold the Result
 struct BufferStruct{
     char * buffer = NULL;
@@ -19,4 +21,42 @@ public:
   BufferStruct data;
 };
 
+class song{
+public:
+  song();
+  ~song();
+
+  memoryMediaObject data;
+  bool isInitialized = false;
+  std::map<std::string, std::string> metadata;
+};
+
+class album{
+  public:
+    album();
+    ~album();
+
+    std::map<std::string, std::string> metadata;
+    std::vector<song> songs;
+};
+
+class artist{
+  public:
+    artist();
+    ~artist();
+
+
+    std::map<std::string, std::string> metadata;
+    std::vector<album> albums;
+};
+
+class mediaLibrary{
+  public:
+    mediaLibrary();
+    ~mediaLibrary();
+    void scanLibrary(subsonicAPI *sAPI);
+
+    artist artists;
+
+};
 #endif

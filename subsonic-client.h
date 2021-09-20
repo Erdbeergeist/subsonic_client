@@ -19,6 +19,7 @@
 #include <tuple>
 #include <typeinfo>
 #include <unistd.h>
+#include <map>
 #include <sys/types.h>
 #include <curl/curl.h>
 #include "tinyxml2.h"
