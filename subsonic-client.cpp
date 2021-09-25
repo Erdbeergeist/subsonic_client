@@ -8,19 +8,21 @@ int main(int argc, char *argv[]) {
 
     tinyxml2::XMLDocument xml;
 
-    subsonicAPI sAPI("https://192.168.1.155/index.php/apps/music/subsonic/rest/", "luxmit", "3x19lyq7e10i", "subsonic-dev");
+    subsonicAPI sAPI();
 
 
     mediaLibrary mediaLib;
-    mediaLib.scanFullLibrary(&sAPI);
-    exit(1);
+    mediaLib.scanLocalLibrary();
+    //mediaLib.scanRemoteLibrary(&sAPI);
 
-
+    std::string track_id;
+    std::cout<<"Choose Track:\n";
+    std::cin>>track_id;
   //  sAPI.getMusicDirectory("artist-95533");
    //sAPI.getMusicDirectory("album-47767");//track-38004
     //sAPI.Print();
 
-    //sAPI.getSong("track-47768");//track-38004
+    //sAPI.getSong(track_id);//track-38004
     //sAPI.Print();
     //sAPI.getMusicDirectory("artist-95533");
   //  sAPI.Print();
@@ -28,7 +30,7 @@ int main(int argc, char *argv[]) {
 
     memoryMediaObject* song = new memoryMediaObject();
     std::cout<<"Downloading..."<<std::endl;
-    //sAPI.download("track-47768", song);
+    sAPI.download(track_id, song);
   // std::ofstream download;
 //    download.open("RiverFlowsInYou.flac", std::ios::out | std::ios::binary);
   //  download.write(&song->data.buffer, song->data.size);

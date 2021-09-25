@@ -59,7 +59,9 @@ class mediaLibrary{
   public:
     mediaLibrary();
     ~mediaLibrary();
-    void scanFullLibrary(subsonicAPI *sAPI);
+    void scanRemoteLibrary(subsonicAPI *sAPI);
+    void scanLocalLibrary();
+    void scanLocalLibrary(std::string libraryfile);
     void createLibraryXML();
 
     std::vector<artist> artists;

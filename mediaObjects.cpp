@@ -112,8 +112,8 @@ void mediaLibrary::createLibraryXML(){
 
 }
 
-void mediaLibrary::scanFullLibrary(subsonicAPI *sAPI){
-
+void mediaLibrary::scanRemoteLibrary(subsonicAPI *sAPI){
+  std::cout<<"Full Remote Library Scan ... this might take a while..."<<std::endl;
   std::string name, id, album_count;
 
   tinyxml2::XMLDocument artists_xml, albums_xml, songs_xml;
@@ -130,7 +130,7 @@ void mediaLibrary::scanFullLibrary(subsonicAPI *sAPI){
       album_count = indexname->FindAttribute("albumCount")->Value();
       mediaLibrary::artists.emplace_back(name, id, album_count);
 
-      std::cout<<"Artist : "<<name<<std::endl;
+    //  std::cout<<std::setfill(' ')<<std::setw(40)<<"\r"<<name<<"                                         "<<std::flush;
 
       //Fill Album Info into Artist
       albums_xml.Parse(sAPI->getArtist(id).c_str());
@@ -145,6 +145,8 @@ void mediaLibrary::scanFullLibrary(subsonicAPI *sAPI){
 
           //std::cout<<"Album : "<<mediaLibrary::artists.back().albums.back().metadata["name"]<<std::endl;
           mediaLibrary::artists.back().albums.emplace_back(album_name, album_id, album_artist);
+          std::cout<<std::setfill(' ')<<std::setw(40)<<"\r"<<name<<"                                         "
+                                                           <<album_name<<"                                         "<<std::flush;
 
           //song_count = node_album->FindAttribute("songCount")->Value();
           //album_year = node_album->FindAttribute("year")->Value();
@@ -152,7 +154,7 @@ void mediaLibrary::scanFullLibrary(subsonicAPI *sAPI){
           //album_genre = node_album->FindAttribute("genre")->Value();
           //album_coverart = node_album->FindAttribute("coverArt")->Value();
           //album_duration = node_album->FindAttribute("duration")->Value();
-          //continue;//DEGBUG
+
           //Fill Song Info into Album
           songs_xml.Parse(sAPI->getAlbum(album_id).c_str());
           std::string song_id, song_artist,
@@ -169,6 +171,66 @@ void mediaLibrary::scanFullLibrary(subsonicAPI *sAPI){
       }
     }
   }
+  std::cout<<"\n Now Saving XML"<<std::endl;
   mediaLibrary::createLibraryXML();
+}
+
+void mediaLibrary::scanLocalLibrary(){
+
+  std::string name, id, album_count;
+
+  tinyxml2::XMLDocument library_xml, songs_xml, albums_xml;
+
+  library_xml.LoadFile(mediaLibrary::defaultLibXMLFileName.c_str());
+
+  for(tinyxml2::XMLElement* node=library_xml.FirstChildElement();
+      node;
+      node=node->NextSiblingElement()){
+    for (tinyxml2::XMLElement* indexname = node->FirstChildElement(); indexname; indexname=indexname->NextSiblingElement())
+      {
+      //Fill Artist Info
+      name = indexname->FindAttribute("name")->Value();
+      id = indexname->FindAttribute("id")->Value();
+      album_count = indexname->FindAttribute("album_count")->Value();
+      mediaLibrary::artists.emplace_back(name, id, album_count);
+
+  //  std::cout<<std::setfill(' ')<<std::setw(40)<<"\r"<<name<<"                                         "<<std::flush;
+      //Fill Album Info into Artist
+      std::string album_name, album_id, album_artist, song_count, album_duration, album_year, album_created, album_genre, album_coverart;
+      for(tinyxml2::XMLElement* node_album=indexname->FirstChildElement();
+          node_album;
+          node_album=node_album->NextSiblingElement())
+     {
+          album_name = node_album->FindAttribute("name")->Value();
+          album_id = node_album->FindAttribute("id")->Value();
+          album_artist = name;
+
+          //std::cout<<"Album : "<<mediaLibrary::artists.back().albums.back().metadata["name"]<<std::endl;
+          mediaLibrary::artists.back().albums.emplace_back(album_name, album_id, album_artist);
+        //  std::cout<<std::setfill(' ')<<std::setw(40)<<"\r"<<name<<"                                         "
+          //                                                 <<album_name<<"                                         "<<std::flush;
+
+          //song_count = node_album->FindAttribute("songCount")->Value();
+          //album_year = node_album->FindAttribute("year")->Value();
+          //album_created = node_album->FindAttribute("created")->Value();
+          //album_genre = node_album->FindAttribute("genre")->Value();
+          //album_coverart = node_album->FindAttribute("coverArt")->Value();
+          //album_duration = node_album->FindAttribute("duration")->Value();
+          //Fill Song Info into Album
+          std::string song_id, song_artist,
+                      song_title, song_album,
+                      song_duration, song_album_id;
+          for(tinyxml2::XMLElement* node_song=node_album->FirstChildElement();
+                          node_song;
+                          node_song=node_song->NextSiblingElement()){
+
+            song_id = node_song->FindAttribute("id")->Value();
+            song_title = node_song->FindAttribute("title")->Value();
+            mediaLibrary::artists.back().albums.back().songs.emplace_back(song_title, song_id);
+            std::cout<<song_title<<"\t"<<song_id<<std::endl;
+          }
+      }
+    }
+  }
 }
 /*##############################################################################*/
