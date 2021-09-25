@@ -24,7 +24,9 @@ public:
 class song{
 public:
   song();
+  song(std::string song_title, std::string song_id);
   ~song();
+  void fillmetadata(std::string song_title, std::string song_id);
 
   memoryMediaObject data;
   bool isInitialized = false;
@@ -34,7 +36,9 @@ public:
 class album{
   public:
     album();
+    album(std::string album_name, std::string album_id, std::string album_artist);
     ~album();
+    void fillmetadata(std::string name, std::string id, std::string artist_name);
 
     std::map<std::string, std::string> metadata;
     std::vector<song> songs;
@@ -43,8 +47,9 @@ class album{
 class artist{
   public:
     artist();
+    artist(std::string name, std::string id, std::string album_count);
     ~artist();
-
+    void fillmetadata(std::string name, std::string id, std::string album_count);
 
     std::map<std::string, std::string> metadata;
     std::vector<album> albums;
@@ -54,9 +59,13 @@ class mediaLibrary{
   public:
     mediaLibrary();
     ~mediaLibrary();
-    void scanLibrary(subsonicAPI *sAPI);
+    void scanFullLibrary(subsonicAPI *sAPI);
+    void createLibraryXML();
 
-    artist artists;
+    std::vector<artist> artists;
+
+  private:
+    std::string defaultLibXMLFileName = "Library.xml";
 
 };
 #endif

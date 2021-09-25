@@ -83,6 +83,26 @@ std::string subsonicAPI::getArtists(){
   return subsonicAPI::last_output;
 }
 
+std::string subsonicAPI::getArtist(std::string id){
+  std::pair<std::string, std::string> p;
+  p.first = "id";
+  p.second = id;
+  std::vector<std::pair<std::string, std::string>> parameters {p};
+  subsonicAPI::last_output = subsonicAPI::cr.perform_request(subsonicAPI::assemble_url("getArtist", &parameters));
+  subsonicAPI::getXML();
+  return subsonicAPI::last_output;
+}
+
+std::string subsonicAPI::getAlbum(std::string id){
+  std::pair<std::string, std::string> p;
+  p.first = "id";
+  p.second = id;
+  std::vector<std::pair<std::string, std::string>> parameters {p};
+  subsonicAPI::last_output = subsonicAPI::cr.perform_request(subsonicAPI::assemble_url("getAlbum", &parameters));
+  subsonicAPI::getXML();
+  return subsonicAPI::last_output;
+}
+
 std::string subsonicAPI::getMusicDirectory(std::string id){
   std::pair<std::string, std::string> p;
   p.first = "id";

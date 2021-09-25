@@ -14,6 +14,16 @@ memoryMediaObject::~memoryMediaObject(){
 artist::artist(){
 }
 
+artist::artist(std::string name, std::string id, std::string album_count){
+  artist::fillmetadata(name, id, album_count);
+}
+
+void artist::fillmetadata(std::string name, std::string id, std::string album_count){
+  artist::metadata["name"] = name;
+  artist::metadata["id"] = id;
+  artist::metadata["album_count"] = album_count;
+}
+
 artist::~artist(){
 }
 /*##############################################################################*/
@@ -22,12 +32,31 @@ artist::~artist(){
 album::album(){
 }
 
+album::album(std::string album_name, std::string album_id, std::string album_artist){
+  album::fillmetadata(album_name, album_id, album_artist);
+}
+
+void album::fillmetadata(std::string album_name, std::string album_id, std::string album_artist){
+  album::metadata["name"] = album_name;
+  album::metadata["id"] = album_id;
+  album::metadata["artist"] = album_artist;
+}
+
 album::~album(){
 }
 /*##############################################################################*/
 
 /*##################################song########################################*/
 song::song(){
+}
+
+song::song(std::string song_title, std::string song_id){
+  song::fillmetadata(song_title, song_id);
+}
+
+void song::fillmetadata(std::string song_title, std::string song_id){
+  song::metadata["title"] = song_title;
+  song::metadata["id"] = song_id;
 }
 
 song::~song(){
@@ -41,15 +70,105 @@ mediaLibrary::mediaLibrary(){
 mediaLibrary::~mediaLibrary(){
 }
 
-void mediaLibrary::scanLibrary(subsonicAPI *sAPI){
-  sAPI->getArtists();
-  sAPI->getXML();
-  for(tinyxml2::XMLElement* node=sAPI->xml.FirstChildElement()->FirstChildElement()->FirstChildElement();
-  node;
-  node=node->NextSiblingElement()){
-    for (tinyxml2::XMLElement* indexname = node->FirstChildElement(); indexname; indexname=indexname->NextSiblingElement()){
-    std::cout<<"i: "<<indexname->FindAttribute("name")->Value()<<std::endl;}
-    //do something
+void mediaLibrary::createLibraryXML(){
+
+  tinyxml2::XMLDocument libraryXML;
+  tinyxml2::XMLNode * pRoot = libraryXML.NewElement("Library");
+  libraryXML.InsertFirstChild(pRoot);
+
+  //Loop over all artists
+  for (auto artist_e : mediaLibrary::artists){
+    tinyxml2::XMLElement * artist = libraryXML.NewElement("Artist");
+
+    //Set Artist Metadata
+    for (auto const& it: artist_e.metadata){
+      artist->SetAttribute(it.first.c_str(), it.second.c_str());
+    }
+
+    //Set Albums
+    for (auto album_e: artist_e.albums){
+      tinyxml2::XMLElement * album = libraryXML.NewElement("Album");
+      //Set Album Metadata
+      for (auto const& it_alb: album_e.metadata){
+        album->SetAttribute(it_alb.first.c_str(), it_alb.second.c_str());
+      }
+
+      //Set Songs
+      for (auto song_e: album_e.songs){
+          tinyxml2::XMLElement * song = libraryXML.NewElement("Song");
+          //Set Song Metadata
+          for(auto const& it_song: song_e.metadata){
+            song->SetAttribute(it_song.first.c_str(), it_song.second.c_str());
+          }
+          album->InsertEndChild(song);
+
+      }
+      artist->InsertEndChild(album);
+    }
+    pRoot->InsertEndChild(artist);
+
   }
+  tinyxml2::XMLError eResult = libraryXML.SaveFile(mediaLibrary::defaultLibXMLFileName.c_str());
+
+}
+
+void mediaLibrary::scanFullLibrary(subsonicAPI *sAPI){
+
+  std::string name, id, album_count;
+
+  tinyxml2::XMLDocument artists_xml, albums_xml, songs_xml;
+  artists_xml.Parse(sAPI->getArtists().c_str());
+
+  for(tinyxml2::XMLElement* node=artists_xml.FirstChildElement()->FirstChildElement()->FirstChildElement();
+      node;
+      node=node->NextSiblingElement()){
+    for (tinyxml2::XMLElement* indexname = node->FirstChildElement(); indexname; indexname=indexname->NextSiblingElement())
+      {
+      //Fill Artist Info
+      name = indexname->FindAttribute("name")->Value();
+      id = indexname->FindAttribute("id")->Value();
+      album_count = indexname->FindAttribute("albumCount")->Value();
+      mediaLibrary::artists.emplace_back(name, id, album_count);
+
+      std::cout<<"Artist : "<<name<<std::endl;
+
+      //Fill Album Info into Artist
+      albums_xml.Parse(sAPI->getArtist(id).c_str());
+      std::string album_name, album_id, album_artist, song_count, album_duration, album_year, album_created, album_genre, album_coverart;
+      for(tinyxml2::XMLElement* node_album=albums_xml.FirstChildElement()->FirstChildElement()->FirstChildElement();
+          node_album;
+          node_album=node_album->NextSiblingElement())
+     {
+          album_name = node_album->FindAttribute("name")->Value();
+          album_id = node_album->FindAttribute("id")->Value();
+          album_artist = name;
+
+          //std::cout<<"Album : "<<mediaLibrary::artists.back().albums.back().metadata["name"]<<std::endl;
+          mediaLibrary::artists.back().albums.emplace_back(album_name, album_id, album_artist);
+
+          //song_count = node_album->FindAttribute("songCount")->Value();
+          //album_year = node_album->FindAttribute("year")->Value();
+          //album_created = node_album->FindAttribute("created")->Value();
+          //album_genre = node_album->FindAttribute("genre")->Value();
+          //album_coverart = node_album->FindAttribute("coverArt")->Value();
+          //album_duration = node_album->FindAttribute("duration")->Value();
+          //continue;//DEGBUG
+          //Fill Song Info into Album
+          songs_xml.Parse(sAPI->getAlbum(album_id).c_str());
+          std::string song_id, song_artist,
+                      song_title, song_album,
+                      song_duration, song_album_id;
+          for(tinyxml2::XMLElement* node_song=songs_xml.FirstChildElement()->FirstChildElement()->FirstChildElement();
+                          node_song;
+                          node_song=node_song->NextSiblingElement()){
+
+            song_id = node_song->FindAttribute("id")->Value();
+            song_title = node_song->FindAttribute("title")->Value();
+            mediaLibrary::artists.back().albums.back().songs.emplace_back(song_title, song_id);
+          }
+      }
+    }
+  }
+  mediaLibrary::createLibraryXML();
 }
 /*##############################################################################*/

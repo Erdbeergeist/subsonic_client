@@ -39,6 +39,9 @@ std::string curlwrapper::perform_request(std::string url){
   curlwrapper::curlresult = curl_easy_setopt(curlwrapper::curlhandle, CURLOPT_URL, url.c_str());
   curlwrapper::curlresult = curl_easy_perform(curlwrapper::curlhandle);
   std::string output = (curlwrapper::curloutput).buffer;
+  (curlwrapper::curloutput).buffer = NULL;
+  (curlwrapper::curloutput).size = 0;
+  (curlwrapper::curloutput).last_read_byte_index = 0;
   return output;
 }
 

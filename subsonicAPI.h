@@ -31,6 +31,8 @@ class subsonicAPI{
     // API Functions
     std::string getMusicFolders();
     std::string getArtists();
+    std::string getArtist(std::string id);
+    std::string getAlbum(std::string id);
     std::string getMusicDirectory(std::string id);
     std::string getSong(std::string id);
     void download(std::string id, memoryMediaObject *memObj); //Should really return if successful
