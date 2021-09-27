@@ -64,6 +64,8 @@ class mediaLibrary{
     void scanLocalLibrary(std::string libraryfile);
     void createLibraryXML();
 
+    void getArtistNames(const char *artistnames);
+
     std::vector<artist> artists;
 
   private:

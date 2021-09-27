@@ -227,10 +227,14 @@ void mediaLibrary::scanLocalLibrary(){
             song_id = node_song->FindAttribute("id")->Value();
             song_title = node_song->FindAttribute("title")->Value();
             mediaLibrary::artists.back().albums.back().songs.emplace_back(song_title, song_id);
-            std::cout<<song_title<<"\t"<<song_id<<std::endl;
+            //std::cout<<song_title<<"\t"<<song_id<<std::endl;
           }
       }
     }
   }
+}
+
+void mediaLibrary::getArtistNames(const char *artistnames){
+
 }
 /*##############################################################################*/
