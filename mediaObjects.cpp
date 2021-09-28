@@ -54,8 +54,8 @@ song::song(std::string song_title, std::string song_id){
   song::fillmetadata(song_title, song_id);
 }
 
-void song::fillmetadata(std::string song_title, std::string song_id){
-  song::metadata["title"] = song_title;
+void song::fillmetadata(std::string song_name, std::string song_id){
+  song::metadata["name"] = song_name;
   song::metadata["id"] = song_id;
 }
 
@@ -158,15 +158,15 @@ void mediaLibrary::scanRemoteLibrary(subsonicAPI *sAPI){
           //Fill Song Info into Album
           songs_xml.Parse(sAPI->getAlbum(album_id).c_str());
           std::string song_id, song_artist,
-                      song_title, song_album,
+                      song_name, song_album,
                       song_duration, song_album_id;
           for(tinyxml2::XMLElement* node_song=songs_xml.FirstChildElement()->FirstChildElement()->FirstChildElement();
                           node_song;
                           node_song=node_song->NextSiblingElement()){
 
             song_id = node_song->FindAttribute("id")->Value();
-            song_title = node_song->FindAttribute("title")->Value();
-            mediaLibrary::artists.back().albums.back().songs.emplace_back(song_title, song_id);
+            song_name = node_song->FindAttribute("title")->Value();
+            mediaLibrary::artists.back().albums.back().songs.emplace_back(song_name, song_id);
           }
       }
     }
@@ -227,7 +227,7 @@ void mediaLibrary::scanLocalLibrary(){
             song_id = node_song->FindAttribute("id")->Value();
             song_title = node_song->FindAttribute("title")->Value();
             mediaLibrary::artists.back().albums.back().songs.emplace_back(song_title, song_id);
-            //std::cout<<song_title<<"\t"<<song_id<<std::endl;
+          //  std::cout<<song_title<<"\t"<<song_id<<std::endl;
           }
       }
     }

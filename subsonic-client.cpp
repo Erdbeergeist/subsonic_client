@@ -14,11 +14,17 @@ static void glfw_error_callback(int error, const char* description)
 int main(int argc, char *argv[]) {
 
     //Start Subsonic API and read local library
-    subsonicAPI sAPI();
+    subsonicAPI sAPI("https://192.168.1.155/index.php/apps/music/subsonic/rest/", "luxmit", "3x19lyq7e10i", "subsonic-dev");
 
     mediaLibrary mediaLib;
     mediaLib.scanLocalLibrary();
     //mediaLib.scanRemoteLibrary(&sAPI);
+
+  //####################################VLC#####################################
+  memoryMediaObject* song_obj = new memoryMediaObject();
+  vlcwrapper vlc;
+  //vlc.setmedia(song_obj);
+  //############################################################################
 
   //#################################Main Window################################
     // Setup window
@@ -66,13 +72,34 @@ int main(int argc, char *argv[]) {
     //Setup Main Window
     static float f = 0.0f;
     static int counter = 0;
-    static int item_current_idx = 0;
+    static int artists_current_idx = 0;
+    static int albums_current_idx = 0;
+    static int songs_current_idx = 0;
+    bool playing = false;
 
     //bool show_demo_window = true;
     //ImGui::ShowDemoWindow(&show_demo_window);
-
     ImGui::Begin("Library");
-    ListBoxWrapper<artist>("Artists", &item_current_idx, mediaLib.artists);
+    ListBoxWrapper<artist>("Artist", &artists_current_idx, mediaLib.artists);
+    ListBoxWrapper<album>("Album", &albums_current_idx, mediaLib.artists[artists_current_idx].albums);
+    ListBoxWrapper<song>("Song", &songs_current_idx, mediaLib.artists[artists_current_idx].albums[albums_current_idx].songs);
+
+    if (ImGui::Button("Play")){
+      std::string track_id = mediaLib.artists[artists_current_idx].albums[albums_current_idx].songs[songs_current_idx].metadata["id"];
+
+      if (!mediaLib.artists[artists_current_idx].albums[albums_current_idx].songs[songs_current_idx].isInitialized){
+        sAPI.download(track_id, &mediaLib.artists[artists_current_idx].albums[albums_current_idx].songs[songs_current_idx].data);
+        mediaLib.artists[artists_current_idx].albums[albums_current_idx].songs[songs_current_idx].isInitialized = true;
+        std::cout<<"Downloaded"<<std::endl;
+      }
+      vlc.setmedia(&mediaLib.artists[artists_current_idx].albums[albums_current_idx].songs[songs_current_idx].data);
+      vlc.play();
+      playing = true;
+  //    sleep(400);
+    }
+    if (ImGui::Button("Stop"))
+      vlc.stop();
+
     ImGui::End();
 
     // Rendering
@@ -86,9 +113,7 @@ int main(int argc, char *argv[]) {
     glfwSwapBuffers(window);
     }
 
-    std::string track_id;
-    std::cout<<"Choose Track:\n";
-    std::cin>>track_id;
+
   //  sAPI.getMusicDirectory("artist-95533");
    //sAPI.getMusicDirectory("album-47767");//track-38004
     //sAPI.Print();
@@ -99,9 +124,7 @@ int main(int argc, char *argv[]) {
   //  sAPI.Print();
 
 
-    memoryMediaObject* song = new memoryMediaObject();
-    std::cout<<"Downloading..."<<std::endl;
-    sAPI.download(track_id, song);
+
   // std::ofstream download;
 //    download.open("RiverFlowsInYou.flac", std::ios::out | std::ios::binary);
   //  download.write(&song->data.buffer, song->data.size);
@@ -109,23 +132,6 @@ int main(int argc, char *argv[]) {
     //char *data = song.buffer;
     //memcpy(buffer, data, 1);
 
-    libvlc_instance_t * inst;
-    libvlc_media_player_t *mp;
-    libvlc_media_t *m;
-    inst = libvlc_new (0, NULL);
-    m = libvlc_media_new_callbacks(inst,
-                                   vlc_open_callback,
-                                   vlc_read_callback,
-                                   vlc_seek_callback,
-                                   NULL,
-                                   &song->data);
-    mp = libvlc_media_player_new_from_media (m);
 
-    std::cout<<"Playing..."<<std::endl;
-    libvlc_media_player_play(mp);
-    sleep(400);
 
-    libvlc_media_release(m);
-    libvlc_media_player_release(mp);
-    libvlc_release(inst);
 }

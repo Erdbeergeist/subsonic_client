@@ -26,7 +26,7 @@ public:
   song();
   song(std::string song_title, std::string song_id);
   ~song();
-  void fillmetadata(std::string song_title, std::string song_id);
+  void fillmetadata(std::string song_name, std::string song_id);
 
   memoryMediaObject data;
   bool isInitialized = false;

@@ -41,3 +41,36 @@ ssize_t vlc_read_callback(void *opaque, unsigned char* buffer, size_t length){
 void vlc_close_callback(void* opaque){
 }
 /*##############################################################################*/
+
+
+/*################################VLC WRAPPER###################################*/
+vlcwrapper::vlcwrapper(){
+  vlcwrapper::vlcinstance = libvlc_new (0, NULL);
+  vlcwrapper::mediaplayer = libvlc_media_player_new(vlcwrapper::vlcinstance);
+}
+
+vlcwrapper::~vlcwrapper(){
+  libvlc_media_release(vlcwrapper::media);
+  libvlc_media_player_release(vlcwrapper::mediaplayer);
+  libvlc_release(vlcwrapper::vlcinstance);
+}
+
+void vlcwrapper::setmedia(memoryMediaObject *mediaObject){
+  vlcwrapper::media = libvlc_media_new_callbacks(vlcwrapper::vlcinstance,
+                                       vlc_open_callback,
+                                       vlc_read_callback,
+                                       vlc_seek_callback,
+                                       NULL,
+                                       &mediaObject->data);
+  libvlc_media_player_set_media(vlcwrapper::mediaplayer, vlcwrapper::media);
+}
+
+void vlcwrapper::play(){
+  libvlc_media_player_play(vlcwrapper::mediaplayer);
+}
+
+void vlcwrapper::stop(){
+  libvlc_media_player_stop_async(vlcwrapper::mediaplayer);
+}
+
+/*##############################################################################*/
