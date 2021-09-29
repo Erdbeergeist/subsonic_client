@@ -20,6 +20,7 @@
 #include <typeinfo>
 #include <unistd.h>
 #include <map>
+#include <thread>
 #include <sys/types.h>
 #include <curl/curl.h>
 #include "tinyxml2.h"

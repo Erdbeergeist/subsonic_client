@@ -29,12 +29,14 @@ ssize_t vlc_read_callback(void *opaque, unsigned char* buffer, size_t length){
 
   if (bytes_left >= length) bytes_to_copy = length;
   else if (bytes_left < length) bytes_to_copy = bytes_left;
-  else return 0;
+  //else return 0;
 
   char * data = buff->buffer;
   std::memcpy(buffer, &data[buff->last_read_byte_index], bytes_to_copy);
   buff->last_read_byte_index = buff->last_read_byte_index + bytes_to_copy;
-
+  std::cout<<buff->size<<"\t"
+           <<buff->last_read_byte_index<<"\t"
+          <<std::endl;
   return bytes_to_copy;
 }
 
@@ -55,22 +57,37 @@ vlcwrapper::~vlcwrapper(){
   libvlc_release(vlcwrapper::vlcinstance);
 }
 
-void vlcwrapper::setmedia(memoryMediaObject *mediaObject){
+void vlcwrapper::setMedia(memoryMediaObject *mediaObject){
   vlcwrapper::media = libvlc_media_new_callbacks(vlcwrapper::vlcinstance,
                                        vlc_open_callback,
                                        vlc_read_callback,
                                        vlc_seek_callback,
                                        NULL,
-                                       &mediaObject->data);
+                                       &mediaObject->buffer);
   libvlc_media_player_set_media(vlcwrapper::mediaplayer, vlcwrapper::media);
 }
 
 void vlcwrapper::play(){
   libvlc_media_player_play(vlcwrapper::mediaplayer);
+  vlcwrapper::playing = true;
 }
 
 void vlcwrapper::stop(){
   libvlc_media_player_stop_async(vlcwrapper::mediaplayer);
+  vlcwrapper::playing = false;
 }
+
+void vlcwrapper::parseAsync(){
+  libvlc_media_parse_async(vlcwrapper::media);
+}
+
+void vlcwrapper::pause(){
+  libvlc_media_player_pause(vlcwrapper::mediaplayer);
+}
+
+bool vlcwrapper::isPlaying(){
+  return libvlc_media_player_is_playing(vlcwrapper::mediaplayer);
+}
+
 
 /*##############################################################################*/

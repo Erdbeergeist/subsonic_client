@@ -4,12 +4,15 @@
 #include "subsonic-client.h"
 
 class subsonicAPI;
+class vlcwrapper;
 
-//Buffer Struct to hold the Result
+
+//Buffer Struct to hold the Media data in Memorz
 struct BufferStruct{
     char * buffer = NULL;
     std::size_t size = 0;
     std::size_t last_read_byte_index = 0;
+    bool isComplete = false;
 };
 
 
@@ -18,19 +21,19 @@ public:
 
   memoryMediaObject();
   ~memoryMediaObject();
-  BufferStruct data;
+  BufferStruct buffer;
 };
 
 class song{
 public:
   song();
-  song(std::string song_title, std::string song_id);
+  song(std::string song_title, std::string song_id, std::string song_size, std::string song_duration);
   ~song();
-  void fillmetadata(std::string song_name, std::string song_id);
+  void fillmetadata(std::string song_name, std::string song_id, std::string song_size, std::string song_duration);
 
   memoryMediaObject data;
-  bool isInitialized = false;
   std::map<std::string, std::string> metadata;
+  bool isDownloaded = false;
 };
 
 class album{
@@ -71,5 +74,27 @@ class mediaLibrary{
   private:
     std::string defaultLibXMLFileName = "Library.xml";
 
+};
+
+class mediaPlayer{
+  public:
+    mediaPlayer(subsonicAPI *sAPI, vlcwrapper *vlc, mediaLibrary *mediaLib);
+    ~mediaPlayer();
+    void play();
+    void stop();
+    void pause();
+    void requestPlayback(int artist_idx, int album_idx, int song_idx);
+    void ping(); //This function will initiate playback once a download has buffered enough or resume playback after a buffer pause
+
+    vlcwrapper *vlc;
+    subsonicAPI *sAPI;
+    mediaLibrary *mediaLib;
+    std::thread backgroundWorker;
+    song *currentSong;
+    size_t bufferAdvanceSize = 100000000; //How many bytes do we have to have downloaded before we begin playback
+
+  private:
+    bool isPlaying = false;
+    bool isDownloading = false;
 };
 #endif

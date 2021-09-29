@@ -128,10 +128,11 @@ void subsonicAPI::download(std::string id, memoryMediaObject *memObj){
   p.first = "id";
   p.second = id;
   std::vector<std::pair<std::string, std::string>> parameters {p};
-  subsonicAPI::cr.perform_download(subsonicAPI::assemble_url("download", &parameters), &memObj->data);
+  subsonicAPI::cr.perform_download(subsonicAPI::assemble_url("download", &parameters), &memObj->buffer);
 
-  std::ofstream download;
-  download.open("RiverFlowsInYou.flac", std::ios::out | std::ios::binary);
-  download.write(memObj->data.buffer, memObj->data.size);
+  memObj->buffer.isComplete = true;
+  //std::ofstream download;
+  //download.open("RiverFlowsInYou.flac", std::ios::out | std::ios::binary);
+  //download.write(memObj->data.buffer, memObj->data.size);
 }
 /*##############################################################################*/

@@ -13,13 +13,18 @@ class vlcwrapper{
   public:
     vlcwrapper();
     ~vlcwrapper();
-    void setmedia(memoryMediaObject *mediaObject);
+    void setMedia(memoryMediaObject *mediaObject);
     void play();
     void stop();
+    void pause();
+    void parseAsync();
+    bool isPlaying();
 
     libvlc_instance_t * vlcinstance;
     libvlc_media_player_t *mediaplayer;
     libvlc_media_t *media;
+
+    bool playing = false;
 };
 
 #endif

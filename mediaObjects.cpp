@@ -1,5 +1,6 @@
 #include "mediaObjects.h"
 #include "subsonicAPI.h"
+#include "vlcwrapper.h"
 
 
 /*##############################memoryMediaObject###############################*/
@@ -50,13 +51,15 @@ album::~album(){
 song::song(){
 }
 
-song::song(std::string song_title, std::string song_id){
-  song::fillmetadata(song_title, song_id);
+song::song(std::string song_title, std::string song_id, std::string song_size, std::string song_duration){
+  song::fillmetadata(song_title, song_id, song_size, song_duration);
 }
 
-void song::fillmetadata(std::string song_name, std::string song_id){
+void song::fillmetadata(std::string song_name, std::string song_id, std::string song_size, std::string song_duration){
   song::metadata["name"] = song_name;
   song::metadata["id"] = song_id;
+  song::metadata["size"] = song_size;
+  song::metadata["duration"] = song_duration;
 }
 
 song::~song(){
@@ -159,14 +162,18 @@ void mediaLibrary::scanRemoteLibrary(subsonicAPI *sAPI){
           songs_xml.Parse(sAPI->getAlbum(album_id).c_str());
           std::string song_id, song_artist,
                       song_name, song_album,
-                      song_duration, song_album_id;
+                      song_duration, song_album_id,
+                      song_size;
           for(tinyxml2::XMLElement* node_song=songs_xml.FirstChildElement()->FirstChildElement()->FirstChildElement();
                           node_song;
                           node_song=node_song->NextSiblingElement()){
 
             song_id = node_song->FindAttribute("id")->Value();
             song_name = node_song->FindAttribute("title")->Value();
-            mediaLibrary::artists.back().albums.back().songs.emplace_back(song_name, song_id);
+            song_size = node_song->FindAttribute("size")->Value();
+            song_duration = node_song->FindAttribute("duration")->Value();
+          //  sAPI->Print();
+            mediaLibrary::artists.back().albums.back().songs.emplace_back(song_name, song_id, song_size, song_duration);
           }
       }
     }
@@ -207,8 +214,8 @@ void mediaLibrary::scanLocalLibrary(){
 
           //std::cout<<"Album : "<<mediaLibrary::artists.back().albums.back().metadata["name"]<<std::endl;
           mediaLibrary::artists.back().albums.emplace_back(album_name, album_id, album_artist);
-        //  std::cout<<std::setfill(' ')<<std::setw(40)<<"\r"<<name<<"                                         "
-          //                                                 <<album_name<<"                                         "<<std::flush;
+          //std::cout<<std::setfill(' ')<<std::setw(40)<<"\r"<<name<<"                                         "
+            //                                               <<album_name<<"                                         "<<std::flush;
 
           //song_count = node_album->FindAttribute("songCount")->Value();
           //album_year = node_album->FindAttribute("year")->Value();
@@ -219,15 +226,18 @@ void mediaLibrary::scanLocalLibrary(){
           //Fill Song Info into Album
           std::string song_id, song_artist,
                       song_title, song_album,
-                      song_duration, song_album_id;
+                      song_duration, song_album_id,
+                      song_size;
           for(tinyxml2::XMLElement* node_song=node_album->FirstChildElement();
                           node_song;
                           node_song=node_song->NextSiblingElement()){
 
             song_id = node_song->FindAttribute("id")->Value();
-            song_title = node_song->FindAttribute("title")->Value();
-            mediaLibrary::artists.back().albums.back().songs.emplace_back(song_title, song_id);
-          //  std::cout<<song_title<<"\t"<<song_id<<std::endl;
+            song_title = node_song->FindAttribute("name")->Value();
+            song_size = node_song->FindAttribute("size")->Value();
+            song_duration = node_song->FindAttribute("duration")->Value();
+
+            mediaLibrary::artists.back().albums.back().songs.emplace_back(song_title, song_id, song_size, song_duration);
           }
       }
     }
@@ -236,5 +246,70 @@ void mediaLibrary::scanLocalLibrary(){
 
 void mediaLibrary::getArtistNames(const char *artistnames){
 
+}
+/*##############################################################################*/
+
+/*#################################mediaPlayer##################################*/
+mediaPlayer::mediaPlayer(subsonicAPI *sAPI, vlcwrapper *vlc, mediaLibrary *mediaLib){
+  mediaPlayer::sAPI = sAPI;
+  mediaPlayer::vlc = vlc;
+  mediaPlayer::mediaLib = mediaLib;
+}
+mediaPlayer::~mediaPlayer(){
+//Call Clean Up #FIXME
+}
+
+void mediaPlayer::play(){
+  vlc->play();
+  mediaPlayer::isPlaying = true;
+}
+
+void mediaPlayer::stop(){
+  vlc->stop();
+  mediaPlayer::isPlaying = false;
+}
+
+void mediaPlayer::pause(){
+  vlc->pause();
+  mediaPlayer::isPlaying = false;
+}
+
+void mediaPlayer::requestPlayback(int artist_idx, int album_idx, int song_idx){
+
+  mediaPlayer::currentSong = &mediaLib->artists[artist_idx].albums[album_idx].songs[song_idx];
+
+  /*Check if the Song is already is downloaded if yes we playback by
+  setting it as the current media in the vlc instance.
+  If not we begin the download*/
+  if(mediaPlayer::currentSong->isDownloaded){
+    mediaPlayer::vlc->setMedia(&mediaPlayer::currentSong->data);
+    mediaPlayer::play();
+    mediaPlayer::isPlaying = true;
+  }
+
+  else{
+    mediaPlayer::backgroundWorker = std::thread(&subsonicAPI::download, mediaPlayer::sAPI, mediaPlayer::currentSong->metadata["id"], &mediaPlayer::mediaLib->artists[artist_idx].albums[album_idx].songs[song_idx].data);
+    mediaPlayer::isDownloading = true;
+  }
+}
+
+void mediaPlayer::ping(){
+//  mediaPlayer::isPlaying = vlc->isPlaying(); //Maybe this is bad #FIXME
+
+  if (mediaPlayer::isDownloading && mediaPlayer::currentSong->data.buffer.isComplete){
+    mediaPlayer::isDownloading = false;
+    currentSong->isDownloaded = true;
+  }
+  /*if(mediaPlayer::isDownloading || mediaPlayer::isPlaying)
+    fprintf(stdout, "Playing: %u Downloading: %u Downloaded: %i Size: %i\n",
+          mediaPlayer::isDownloading, mediaPlayer::isPlaying,
+          (unsigned long int)mediaPlayer::currentSong->data.buffer.size,  std::stoi(currentSong->metadata["size"]));*/
+  if (mediaPlayer::isPlaying && !mediaPlayer::isDownloading)
+    return;
+  else if(!mediaPlayer::isPlaying && mediaPlayer::isDownloading &&
+         currentSong->data.buffer.size > mediaPlayer::bufferAdvanceSize){
+    vlc->setMedia(&mediaPlayer::currentSong->data);
+    mediaPlayer::play();
+  }
 }
 /*##############################################################################*/

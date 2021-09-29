@@ -49,6 +49,7 @@ void curlwrapper::perform_download(std::string url, BufferStruct *buffer){
   curl_easy_setopt(curlwrapper::curlhandle, CURLOPT_WRITEDATA, (void *)(buffer));
   curlwrapper::curlresult = curl_easy_setopt(curlwrapper::curlhandle, CURLOPT_URL, url.c_str());
   curlwrapper::curlresult = curl_easy_perform(curlwrapper::curlhandle);
+  buffer->isComplete = true;
   curl_easy_setopt(curlwrapper::curlhandle, CURLOPT_WRITEDATA, (void *)&(curlwrapper::curloutput));
 }
 /*##############################################################################*/
