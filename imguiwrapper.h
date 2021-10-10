@@ -19,12 +19,24 @@ template<class T> static bool vector_getter(void* vec, int idx, const char** out
     return true;
 };
 
+template<class T> static bool vector_getter_p(void* vec, int idx, const char** out_text){
+    auto& vector = *static_cast<std::vector<T*>*>(vec);
+    if (idx < 0 || idx >= static_cast<int>(vector.size())) { return false; }
+    *out_text = vector.at(idx)->metadata["name"].c_str();
+    return true;
+};
+
 template<class T> bool ListBoxWrapper(const char* label, int* currIndex, std::vector<T> &values){
     if (values.empty()) { return false; }
     return ImGui::ListBox(label, currIndex, vector_getter<T>,
         static_cast<void*>(&values), values.size());
 }
 
+template<class T> bool ListBoxWrapper(const char* label, int* currIndex, std::vector<T*> &values){
+    if (values.empty()) { return false; }
+    return ImGui::ListBox(label, currIndex, vector_getter_p<T>,
+        static_cast<void *>(&values), values.size());
+}
 
 static void glfw_error_callback(int error, const char* description);
 

@@ -2,7 +2,6 @@
 #include "subsonicAPI.h"
 #include "vlcwrapper.h"
 
-
 /*##############################memoryMediaObject###############################*/
 memoryMediaObject::memoryMediaObject(){
 }
@@ -53,6 +52,7 @@ song::song(){
 
 song::song(std::string song_title, std::string song_id, std::string song_size, std::string song_duration){
   song::fillmetadata(song_title, song_id, song_size, song_duration);
+
 }
 
 void song::fillmetadata(std::string song_name, std::string song_id, std::string song_size, std::string song_duration){
@@ -240,6 +240,7 @@ void mediaLibrary::scanLocalLibrary(){
             mediaLibrary::artists.back().albums.back().songs.emplace_back(song_title, song_id, song_size, song_duration);
           }
       }
+
     }
   }
 }
@@ -260,8 +261,10 @@ mediaPlayer::~mediaPlayer(){
 }
 
 void mediaPlayer::play(){
-  vlc->play();
-  mediaPlayer::isPlaying = true;
+  if (!mediaPlayer::isPlaying){
+    vlc->play();
+    mediaPlayer::isPlaying = true;
+  }
 }
 
 void mediaPlayer::stop(){
@@ -274,42 +277,111 @@ void mediaPlayer::pause(){
   mediaPlayer::isPlaying = false;
 }
 
+void mediaPlayer::addToPlaybackQueue(int artist_idx, int album_idx, int song_idx){
+    mediaPlayer::playbackQueue.push_back(mediaPlayer::getSongFromIndices(artist_idx, album_idx, song_idx));
+}
+
+void mediaPlayer::addToPlaybackQueue(song *songToAdd){
+  mediaPlayer::playbackQueue.push_back(songToAdd);
+}
+
+song* mediaPlayer::getSongFromIndices(int artist_idx, int album_idx, int song_idx){
+  //std::cout<<"&mediaLib/Song/: "<<&mediaPlayer::mediaLib->artists[artist_idx].albums[album_idx].songs[song_idx]<<std::endl;
+  //std::cout<<"&mediaLib/Song/data/buffer/iscomplete: "<<&mediaPlayer::mediaLib->artists[artist_idx].albums[album_idx].songs[song_idx].data.buffer.isComplete<<std::endl;
+  return &mediaPlayer::mediaLib->artists[artist_idx].albums[album_idx].songs[song_idx];
+}
+
+void mediaPlayer::beginDownload(song *songToDownload, int index = 0){
+  if (!mediaPlayer::isDownloading){
+    mediaPlayer::backgroundWorker = std::thread(&subsonicAPI::download, mediaPlayer::sAPI, songToDownload->metadata["id"], &songToDownload->data);
+    mediaPlayer::isDownloading = true;
+    mediaPlayer::download_index = index;
+  }
+}
+
 void mediaPlayer::requestPlayback(int artist_idx, int album_idx, int song_idx){
 
-  mediaPlayer::currentSong = &mediaLib->artists[artist_idx].albums[album_idx].songs[song_idx];
+  mediaPlayer::addToPlaybackQueue(artist_idx, album_idx, song_idx);
 
-  /*Check if the Song is already is downloaded if yes we playback by
-  setting it as the current media in the vlc instance.
-  If not we begin the download*/
-  if(mediaPlayer::currentSong->isDownloaded){
-    mediaPlayer::vlc->setMedia(&mediaPlayer::currentSong->data);
-    mediaPlayer::play();
-    mediaPlayer::isPlaying = true;
-  }
+  /*if (mediaPlayer::playbackQueue.size() < 1) {
+    mediaPlayer::currentSong = mediaPlayer::getSongFromIndices(artist_idx, album_idx, song_idx);
 
-  else{
-    mediaPlayer::backgroundWorker = std::thread(&subsonicAPI::download, mediaPlayer::sAPI, mediaPlayer::currentSong->metadata["id"], &mediaPlayer::mediaLib->artists[artist_idx].albums[album_idx].songs[song_idx].data);
-    mediaPlayer::isDownloading = true;
+    /*Check if the Song is already is downloaded if yes we playback by
+    setting it as the current media in the vlc instance.
+    If not we begin the download*/
+  /*  if(mediaPlayer::currentSong->isDownloaded){
+      mediaPlayer::vlc->setMedia(&mediaPlayer::currentSong->data);
+      mediaPlayer::play();
+    }
+
+    else{
+      mediaPlayer::beginDownload(mediaPlayer::currentSong);
+    }
+  }*/
+}
+
+int mediaPlayer::downloadNextSongInQueue(){
+
+  //Check for undownloaded songs in queue
+  for (int i = 0; i < mediaPlayer::playbackQueue.size(); i++){
+    if (!mediaPlayer::playbackQueue[i]->data.buffer.isComplete){
+      mediaPlayer::beginDownload(mediaPlayer::playbackQueue[i], i);
+      return i;
+    }
   }
+  return -1;
 }
 
 void mediaPlayer::ping(){
 //  mediaPlayer::isPlaying = vlc->isPlaying(); //Maybe this is bad #FIXME
-
-  if (mediaPlayer::isDownloading && mediaPlayer::currentSong->data.buffer.isComplete){
+  if (mediaPlayer::playbackQueue.size()<1) return;
+  std::cout<<mediaPlayer::playbackQueue[download_index]->metadata["name"]<<"\t"<<
+             mediaPlayer::playbackQueue[download_index]->data.buffer.isComplete<<"\t"<<
+             mediaPlayer::playbackQueue[download_index]->data.buffer.size<<std::endl;
+  //Check if current download is finished
+  if (mediaPlayer::playbackQueue[mediaPlayer::download_index]->data.buffer.isComplete){
     mediaPlayer::isDownloading = false;
-    currentSong->isDownloaded = true;
+    if (mediaPlayer::backgroundWorker.joinable()) mediaPlayer::backgroundWorker.join();
+    mediaPlayer::downloadNextSongInQueue();
   }
+
+  //Are we currently playing?
+  if (!mediaPlayer::isPlaying && (mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data.buffer.isComplete
+                                  || mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data.buffer.size > mediaPlayer::bufferAdvanceSize)){
+    mediaPlayer::vlc->setMedia(&mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data);
+    mediaPlayer::playing_idx = mediaPlayer::currentSongPlabackQueueIdx;
+    mediaPlayer::play();
+  }
+  //Are we playing, but want another song in the queue
+  else if ((mediaPlayer::isPlaying && mediaPlayer::playing_idx != mediaPlayer::currentSongPlabackQueueIdx) && (mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data.buffer.isComplete
+                                  || mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data.buffer.size > mediaPlayer::bufferAdvanceSize)){
+    mediaPlayer::vlc->setMedia(&mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data);
+    mediaPlayer::playing_idx = mediaPlayer::currentSongPlabackQueueIdx;
+    mediaPlayer::play();
+  }
+
+
+  //Are we neither playing nor downloading?
+  if (!mediaPlayer::isPlaying){
+    if (!mediaPlayer::isDownloading){
+      downloadNextSongInQueue();
+    }
+  }
+
+
+
+  //Check if all songs in Queue have been Downloaded
+
   /*if(mediaPlayer::isDownloading || mediaPlayer::isPlaying)
     fprintf(stdout, "Playing: %u Downloading: %u Downloaded: %i Size: %i\n",
           mediaPlayer::isDownloading, mediaPlayer::isPlaying,
           (unsigned long int)mediaPlayer::currentSong->data.buffer.size,  std::stoi(currentSong->metadata["size"]));*/
-  if (mediaPlayer::isPlaying && !mediaPlayer::isDownloading)
+  /*if (mediaPlayer::isPlaying && !mediaPlayer::isDownloading)
     return;
   else if(!mediaPlayer::isPlaying && mediaPlayer::isDownloading &&
          currentSong->data.buffer.size > mediaPlayer::bufferAdvanceSize){
     vlc->setMedia(&mediaPlayer::currentSong->data);
     mediaPlayer::play();
-  }
+  }*/
 }
 /*##############################################################################*/

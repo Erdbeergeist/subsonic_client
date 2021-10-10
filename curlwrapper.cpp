@@ -14,7 +14,9 @@ size_t WriteMemoryCallback(void *ptr, size_t size, size_t nmemb, void *data){
         std::memcpy( &( mem->buffer[ mem->size ] ), ptr, realsize );
         mem->size += realsize;
         mem->buffer[ mem->size ] = 0;
+        //std::cout<<mem->size<<std::endl;
     }
+
     return realsize;
 }
 

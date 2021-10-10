@@ -33,7 +33,7 @@ public:
 
   memoryMediaObject data;
   std::map<std::string, std::string> metadata;
-  bool isDownloaded = false;
+  std::size_t *byteSize;
 };
 
 class album{
@@ -83,7 +83,12 @@ class mediaPlayer{
     void play();
     void stop();
     void pause();
+    song* getSongFromIndices(int artist_idx, int album_idx, int song_idx);
+    void addToPlaybackQueue(int artist_idx, int album_idx, int song_idx);
+    void addToPlaybackQueue(song *songToAdd);
     void requestPlayback(int artist_idx, int album_idx, int song_idx);
+    void beginDownload(song *songToDownload, int index);
+    int downloadNextSongInQueue();
     void ping(); //This function will initiate playback once a download has buffered enough or resume playback after a buffer pause
 
     vlcwrapper *vlc;
@@ -91,10 +96,15 @@ class mediaPlayer{
     mediaLibrary *mediaLib;
     std::thread backgroundWorker;
     song *currentSong;
-    size_t bufferAdvanceSize = 100000000; //How many bytes do we have to have downloaded before we begin playback
+    size_t bufferAdvanceSize = 50000000; //How many bytes do we have to have downloaded before we begin playback
+    std::vector<song *> playbackQueue;
+    int currentSongPlabackQueueIdx = 0;
 
   private:
     bool isPlaying = false;
     bool isDownloading = false;
+    int download_index = 0;
+    int playing_idx = 0;
+
 };
 #endif
