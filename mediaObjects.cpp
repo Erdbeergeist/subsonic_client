@@ -295,7 +295,7 @@ void mediaPlayer::beginDownload(song *songToDownload, int index = 0){
   if (!mediaPlayer::isDownloading){
     mediaPlayer::backgroundWorker = std::thread(&subsonicAPI::download, mediaPlayer::sAPI, songToDownload->metadata["id"], &songToDownload->data);
     mediaPlayer::isDownloading = true;
-    mediaPlayer::download_index = index;
+    mediaPlayer::download_idx = index;
   }
 }
 
@@ -333,13 +333,18 @@ int mediaPlayer::downloadNextSongInQueue(){
 }
 
 void mediaPlayer::ping(){
-//  mediaPlayer::isPlaying = vlc->isPlaying(); //Maybe this is bad #FIXME
+
   if (mediaPlayer::playbackQueue.size()<1) return;
-  std::cout<<mediaPlayer::playbackQueue[download_index]->metadata["name"]<<"\t"<<
-             mediaPlayer::playbackQueue[download_index]->data.buffer.isComplete<<"\t"<<
-             mediaPlayer::playbackQueue[download_index]->data.buffer.size<<std::endl;
+
+  if (mediaPlayer::isDownloading){
+    std::cout<<"MEDIA PLAYER PING: DW_NAME||DW_COMPLETE||DW_SIZE: "<<mediaPlayer::playbackQueue[download_idx]->metadata["name"]<<"\t"<<
+               mediaPlayer::playbackQueue[download_idx]->data.buffer.isComplete<<"\t"<<
+               //(int64_t) (mediaPlayer::playbackQueue[download_idx]->data.buffer.size-mediaPlayer::bufferAdvanceSize)<<"\t"<<
+               mediaPlayer::playbackQueue[download_idx]->data.buffer.size<<std::endl;
+  }
+
   //Check if current download is finished
-  if (mediaPlayer::playbackQueue[mediaPlayer::download_index]->data.buffer.isComplete){
+  if (mediaPlayer::playbackQueue[mediaPlayer::download_idx]->data.buffer.isComplete){
     mediaPlayer::isDownloading = false;
     if (mediaPlayer::backgroundWorker.joinable()) mediaPlayer::backgroundWorker.join();
     mediaPlayer::downloadNextSongInQueue();
@@ -352,6 +357,7 @@ void mediaPlayer::ping(){
     mediaPlayer::playing_idx = mediaPlayer::currentSongPlabackQueueIdx;
     mediaPlayer::play();
   }
+
   //Are we playing, but want another song in the queue
   else if ((mediaPlayer::isPlaying && mediaPlayer::playing_idx != mediaPlayer::currentSongPlabackQueueIdx) && (mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data.buffer.isComplete
                                   || mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data.buffer.size > mediaPlayer::bufferAdvanceSize)){
@@ -368,20 +374,15 @@ void mediaPlayer::ping(){
     }
   }
 
+  //Update State
+  mediaPlayer::state.playing_idx = mediaPlayer::playing_idx;
+  mediaPlayer::state.download_idx = mediaPlayer::download_idx;
+  mediaPlayer::state.isPlaying = mediaPlayer::isPlaying;
+  mediaPlayer::state.isDownloading = mediaPlayer::isDownloading;
+  mediaPlayer::state.songPosition = mediaPlayer::vlc->getTime();
+  mediaPlayer::state.songDuration = std::atoi(mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->metadata["duration"].c_str());
 
 
-  //Check if all songs in Queue have been Downloaded
-
-  /*if(mediaPlayer::isDownloading || mediaPlayer::isPlaying)
-    fprintf(stdout, "Playing: %u Downloading: %u Downloaded: %i Size: %i\n",
-          mediaPlayer::isDownloading, mediaPlayer::isPlaying,
-          (unsigned long int)mediaPlayer::currentSong->data.buffer.size,  std::stoi(currentSong->metadata["size"]));*/
-  /*if (mediaPlayer::isPlaying && !mediaPlayer::isDownloading)
-    return;
-  else if(!mediaPlayer::isPlaying && mediaPlayer::isDownloading &&
-         currentSong->data.buffer.size > mediaPlayer::bufferAdvanceSize){
-    vlc->setMedia(&mediaPlayer::currentSong->data);
-    mediaPlayer::play();
-  }*/
+  if (mediaPlayer::isPlaying) std::cout<<"MEDIA PLAYER PING: SONGPOSITION: "<<mediaPlayer::state.songPosition<<std::endl;
 }
 /*##############################################################################*/

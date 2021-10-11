@@ -34,7 +34,7 @@ ssize_t vlc_read_callback(void *opaque, unsigned char* buffer, size_t length){
   char * data = buff->buffer;
   std::memcpy(buffer, &data[buff->last_read_byte_index], bytes_to_copy);
   buff->last_read_byte_index = buff->last_read_byte_index + bytes_to_copy;
-  std::cout<<buff->size<<"\t"
+  std::cout<<"VLC READ_CALLBACK SIZE||LAST_BYTE: "<<buff->size<<"\t"
            <<buff->last_read_byte_index<<"\t"
           <<std::endl;
   return bytes_to_copy;
@@ -89,5 +89,8 @@ bool vlcwrapper::isPlaying(){
   return libvlc_media_player_is_playing(vlcwrapper::mediaplayer);
 }
 
+int64_t vlcwrapper::getTime(){
+  return (int64_t) libvlc_media_player_get_time(vlcwrapper::mediaplayer)/1000;
+}
 
 /*##############################################################################*/

@@ -30,12 +30,9 @@ int main(int argc, char *argv[]) {
   //  mediaLib.scanRemoteLibrary(&sAPI);
 
   //####################################VLC#####################################
-  memoryMediaObject* song_obj = new memoryMediaObject();
   vlcwrapper vlc;
-  std::thread background_worker;
 
   //############################################################################
-
   //Register subsonicAPI, mediaLibrary and vlcwrapper with the mediaPlayer class
   mediaPlayer player(&sAPI, &vlc, &mediaLib);
 
@@ -63,7 +60,7 @@ int main(int argc, char *argv[]) {
   ImGui::CreateContext();
   ImGuiIO& io = ImGui::GetIO();
   (void)io;
-  //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+  io.ConfigFlags = ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
   //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
   // Setup Dear ImGui style
@@ -78,6 +75,7 @@ int main(int argc, char *argv[]) {
   static int artists_current_idx = 0;
   static int albums_current_idx = 0;
   static int songs_current_idx = 0;
+  bool close_button = true;
   float playing_position = 0;
 
 while (!glfwWindowShouldClose(window)){
@@ -92,40 +90,38 @@ while (!glfwWindowShouldClose(window)){
   static float f = 0.0f;
   static int counter = 0;
 
-  //bool show_demo_window = true;
+  bool show_demo_window = true;
   //ImGui::ShowDemoWindow(&show_demo_window);
-  ImGui::Begin("Library");
+  ImGui::Begin("Library", &close_button,
+                                        (ImGuiWindowFlags_AlwaysAutoResize));
   ListBoxWrapper<artist>("###Artist", &artists_current_idx, mediaLib.artists);
-  //ImGui::SameLine(0,50);
+  ImGui::SameLine(0,25);
   ListBoxWrapper<album>("###Album", &albums_current_idx, mediaLib.artists[artists_current_idx].albums);
+  ImGui::SameLine(0,25);
   ListBoxWrapper<song>("###Song", &songs_current_idx, mediaLib.artists[artists_current_idx].albums[albums_current_idx].songs);
-  ImGui::SliderFloat("###PlayingPos", &playing_position, 0, 1);
+  ListBoxWrapper<song>("Playlist", &player.currentSongPlabackQueueIdx, player.playbackQueue);
+
+  ImGui::SliderInt("###PlayingPos", &player.state.songPosition, 0,  player.state.songDuration);
+
   if (ImGui::Button("Play")){
     player.requestPlayback(artists_current_idx, albums_current_idx, songs_current_idx);
-    //std::string track_id = mediaLib.artists[artists_current_idx].albums[albums_current_idx].songs[songs_current_idx].metadata["id"];
-    //if (!mediaLib.artists[artists_current_idx].albums[albums_current_idx].songs[songs_current_idx].data.buffer.isComplete){
-    //  background_worker = std::thread(&subsonicAPI::download, &sAPI, track_id, &mediaLib.artists[artists_current_idx].albums[albums_current_idx].songs[songs_current_idx].data);
-    //  vlc.setMedia(&mediaLib.artists[artists_current_idx].albums[albums_current_idx].songs[songs_current_idx].data);
-  //  }
   }
-
-  //if (vlc.playing)
-  //  playing_position = (float)mediaLib.artists[artists_current_idx].albums[albums_current_idx].songs[songs_current_idx].data.buffer.last_read_byte_index/std::stof(mediaLib.artists[artists_current_idx].albums[albums_current_idx].songs[songs_current_idx].metadata["size"]);
-
-    //playing = true;
+  ImGui::SameLine(0,25);
   if (ImGui::Button("Stop")){
     vlc.stop();
   }
+  ImGui::SameLine(0,25);
   if (ImGui::Button("Pause")){
     vlc.pause();
   }
-  ListBoxWrapper<song>("Playlist", &player.currentSongPlabackQueueIdx, player.playbackQueue);
 
   player.ping();
     //std::cout<<mediaLib.artists[artists_current_idx].albums[albums_current_idx].songs[songs_current_idx].data.buffer.size<<"\t"
       //       <<mediaLib.artists[artists_current_idx].albums[albums_current_idx].songs[songs_current_idx].data.buffer.last_read_byte_index<<"\t"
         //     <<(float)(mediaLib.artists[artists_current_idx].albums[albums_current_idx].songs[songs_current_idx].data.buffer.last_read_byte_index/mediaLib.artists[artists_current_idx].albums[albums_current_idx].songs[songs_current_idx].data.buffer.size)<<std::endl;
     //std::cout<<"main"<<std::endl;
+  if (!close_button) exit(1); //FIXME ADD CLEANUP
+
   ImGui::End();
 
   // Rendering

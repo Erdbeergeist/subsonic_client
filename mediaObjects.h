@@ -76,6 +76,16 @@ class mediaLibrary{
 
 };
 
+struct mediaPlayerState{
+  int playing_idx = -1;
+  int download_idx = -1;
+  int songPosition = 0;
+  int songDuration = 1;
+  bool isPlaying = false;
+  bool isDownloading = false;
+
+};
+
 class mediaPlayer{
   public:
     mediaPlayer(subsonicAPI *sAPI, vlcwrapper *vlc, mediaLibrary *mediaLib);
@@ -96,14 +106,15 @@ class mediaPlayer{
     mediaLibrary *mediaLib;
     std::thread backgroundWorker;
     song *currentSong;
-    size_t bufferAdvanceSize = 50000000; //How many bytes do we have to have downloaded before we begin playback
+    std::size_t bufferAdvanceSize = 10000000; //How many bytes do we have to have downloaded before we begin playback
     std::vector<song *> playbackQueue;
     int currentSongPlabackQueueIdx = 0;
+    mediaPlayerState state;
 
   private:
     bool isPlaying = false;
     bool isDownloading = false;
-    int download_index = 0;
+    int download_idx = 0;
     int playing_idx = 0;
 
 };

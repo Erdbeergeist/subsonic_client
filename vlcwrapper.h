@@ -19,6 +19,7 @@ class vlcwrapper{
     void pause();
     void parseAsync();
     bool isPlaying();
+    int64_t getTime();
 
     libvlc_instance_t * vlcinstance;
     libvlc_media_player_t *mediaplayer;
