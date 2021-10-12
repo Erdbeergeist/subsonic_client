@@ -13,15 +13,6 @@ static void glfw_error_callback(int error, const char* description)
 
 int main(int argc, char *argv[]) {
 
-/*  b.fill();
-  b.fill();
-  b.fill();
-
-
-  std::cout<<&b.Avec.back().buf.v<<"\t"<<b.Avec.back().Av<<std::endl;
-
-  exit(1);*/
-
   //Start Subsonic API and read local library
   subsonicAPI sAPI("https://192.168.1.155/index.php/apps/music/subsonic/rest/", "luxmit", "3x19lyq7e10i", "subsonic-dev");
 
@@ -101,7 +92,7 @@ while (!glfwWindowShouldClose(window)){
   ListBoxWrapper<song>("###Song", &songs_current_idx, mediaLib.artists[artists_current_idx].albums[albums_current_idx].songs);
   ListBoxWrapper<song>("Playlist", &player.currentSongPlabackQueueIdx, player.playbackQueue);
 
-  ImGui::SliderInt("###PlayingPos", &player.state.songPosition, 0,  player.state.songDuration);
+  ImGui::SliderInt("###PlayingPos", &player.state.songPosition, 0,  player.state.songDuration, "%i", ImGuiSliderFlags_NoInput);
 
   if (ImGui::Button("Play")){
     player.requestPlayback(artists_current_idx, albums_current_idx, songs_current_idx);

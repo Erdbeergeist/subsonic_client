@@ -68,7 +68,6 @@ class mediaLibrary{
     void createLibraryXML();
 
     void getArtistNames(const char *artistnames);
-
     std::vector<artist> artists;
 
   private:
@@ -99,6 +98,7 @@ class mediaPlayer{
     void requestPlayback(int artist_idx, int album_idx, int song_idx);
     void beginDownload(song *songToDownload, int index);
     int downloadNextSongInQueue();
+    int setTime(int newTime);
     void ping(); //This function will initiate playback once a download has buffered enough or resume playback after a buffer pause
 
     vlcwrapper *vlc;
@@ -113,9 +113,11 @@ class mediaPlayer{
 
   private:
     bool isPlaying = false;
+    bool isWaitingOnVLC = false;
     bool isDownloading = false;
     int download_idx = 0;
     int playing_idx = 0;
+    int songPosition = 0;
 
 };
 #endif

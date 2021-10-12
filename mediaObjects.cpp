@@ -52,7 +52,6 @@ song::song(){
 
 song::song(std::string song_title, std::string song_id, std::string song_size, std::string song_duration){
   song::fillmetadata(song_title, song_id, song_size, song_duration);
-
 }
 
 void song::fillmetadata(std::string song_name, std::string song_id, std::string song_size, std::string song_duration){
@@ -246,7 +245,6 @@ void mediaLibrary::scanLocalLibrary(){
 }
 
 void mediaLibrary::getArtistNames(const char *artistnames){
-
 }
 /*##############################################################################*/
 
@@ -256,6 +254,7 @@ mediaPlayer::mediaPlayer(subsonicAPI *sAPI, vlcwrapper *vlc, mediaLibrary *media
   mediaPlayer::vlc = vlc;
   mediaPlayer::mediaLib = mediaLib;
 }
+
 mediaPlayer::~mediaPlayer(){
 //Call Clean Up #FIXME
 }
@@ -270,6 +269,7 @@ void mediaPlayer::play(){
 void mediaPlayer::stop(){
   vlc->stop();
   mediaPlayer::isPlaying = false;
+  mediaPlayer::isWaitingOnVLC = true;
 }
 
 void mediaPlayer::pause(){
@@ -336,10 +336,16 @@ void mediaPlayer::ping(){
 
   if (mediaPlayer::playbackQueue.size()<1) return;
 
+  if (mediaPlayer::isWaitingOnVLC){
+    std::cout<<"MEDIA PLAYER PING WAITINGONVLC: "<<vlc->waitingOnEvent<<std::endl;
+    mediaPlayer::isWaitingOnVLC = vlc->waitingOnEvent;
+    return;
+  }
+
   if (mediaPlayer::isDownloading){
     std::cout<<"MEDIA PLAYER PING: DW_NAME||DW_COMPLETE||DW_SIZE: "<<mediaPlayer::playbackQueue[download_idx]->metadata["name"]<<"\t"<<
                mediaPlayer::playbackQueue[download_idx]->data.buffer.isComplete<<"\t"<<
-               //(int64_t) (mediaPlayer::playbackQueue[download_idx]->data.buffer.size-mediaPlayer::bufferAdvanceSize)<<"\t"<<
+               (int64_t) (mediaPlayer::playbackQueue[download_idx]->data.buffer.size-mediaPlayer::bufferAdvanceSize)<<"\t"<<
                mediaPlayer::playbackQueue[download_idx]->data.buffer.size<<std::endl;
   }
 
@@ -352,7 +358,7 @@ void mediaPlayer::ping(){
 
   //Are we currently playing?
   if (!mediaPlayer::isPlaying && (mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data.buffer.isComplete
-                                  || mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data.buffer.size > mediaPlayer::bufferAdvanceSize)){
+                              || mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data.buffer.size > mediaPlayer::bufferAdvanceSize)){
     mediaPlayer::vlc->setMedia(&mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data);
     mediaPlayer::playing_idx = mediaPlayer::currentSongPlabackQueueIdx;
     mediaPlayer::play();
@@ -360,12 +366,11 @@ void mediaPlayer::ping(){
 
   //Are we playing, but want another song in the queue
   else if ((mediaPlayer::isPlaying && mediaPlayer::playing_idx != mediaPlayer::currentSongPlabackQueueIdx) && (mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data.buffer.isComplete
-                                  || mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data.buffer.size > mediaPlayer::bufferAdvanceSize)){
+                                   || mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data.buffer.size > mediaPlayer::bufferAdvanceSize)){
     mediaPlayer::vlc->setMedia(&mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data);
     mediaPlayer::playing_idx = mediaPlayer::currentSongPlabackQueueIdx;
     mediaPlayer::play();
   }
-
 
   //Are we neither playing nor downloading?
   if (!mediaPlayer::isPlaying){
@@ -374,15 +379,42 @@ void mediaPlayer::ping(){
     }
   }
 
+  //Has the Time Slider been moved ?
+  if (mediaPlayer::isPlaying && (mediaPlayer::state.songPosition != mediaPlayer::songPosition)) {
+    mediaPlayer::setTime(mediaPlayer::state.songPosition);
+  }
+
   //Update State
   mediaPlayer::state.playing_idx = mediaPlayer::playing_idx;
   mediaPlayer::state.download_idx = mediaPlayer::download_idx;
   mediaPlayer::state.isPlaying = mediaPlayer::isPlaying;
   mediaPlayer::state.isDownloading = mediaPlayer::isDownloading;
   mediaPlayer::state.songPosition = mediaPlayer::vlc->getTime();
+  mediaPlayer::songPosition = mediaPlayer::state.songPosition;
   mediaPlayer::state.songDuration = std::atoi(mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->metadata["duration"].c_str());
 
 
-  if (mediaPlayer::isPlaying) std::cout<<"MEDIA PLAYER PING: SONGPOSITION: "<<mediaPlayer::state.songPosition<<std::endl;
+  //if (mediaPlayer::isPlaying) std::cout<<"MEDIA PLAYER PING: SONGPOSITION||VLC PLAYING: "<<mediaPlayer::state.songPosition<<"\t"<<mediaPlayer::vlc->isPlaying()<<std::endl;
+}
+
+int mediaPlayer::setTime(int newTime){
+  if (mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data.buffer.isComplete) mediaPlayer::vlc->setTime(newTime);
+  else if (((float)newTime/(float)mediaPlayer::songPosition)*((float)mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data.buffer.last_read_byte_index) <
+            mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data.buffer.size - 2*mediaPlayer::bufferAdvanceSize){
+    mediaPlayer::vlc->setTime(newTime);
+    std::cout<<"MEDIA PLAYER SETTIME: CHANGESONGPOSITION||VLC PLAYING: "<<newTime<<"\t"<<mediaPlayer::songPosition<<"\t"<<
+              mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data.buffer.size<<"\t"<<mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data.buffer.last_read_byte_index
+              <<"\t"<<(std::size_t)((float)newTime/(float)mediaPlayer::songPosition)<<"\t"<<((float)newTime/(float)mediaPlayer::songPosition)*((float)mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data.buffer.last_read_byte_index)<<
+              "\t"<<mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data.buffer.size - 2*mediaPlayer::bufferAdvanceSize<<std::endl;
+
+  }
+  if (!mediaPlayer::vlc->isPlaying()){
+    mediaPlayer::stop();
+    mediaPlayer::vlc->setMedia(&mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data);
+    mediaPlayer::vlc->setTime(mediaPlayer::songPosition);
+    mediaPlayer::play();
+  }
+  if (mediaPlayer::isPlaying) std::cout<<"MEDIA PLAYER PING: SONGPOSITION||VLC PLAYING: "<<mediaPlayer::vlc->getTime()<<"\t"<<mediaPlayer::vlc->isPlaying()<<std::endl;
+  return mediaPlayer::vlc->getTime();
 }
 /*##############################################################################*/
