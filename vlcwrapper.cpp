@@ -103,6 +103,8 @@ int vlcwrapper::getTime(){
 
 void vlcwrapper::setTime(int time){
   libvlc_media_player_set_time(vlcwrapper::mediaPlayer, (int64_t) time*1000, false);
+  vlcwrapper::attachEvent(libvlc_MediaPlayerTimeChanged);
+  vlcwrapper::waitingOnEvent = true;
 }
 
 void vlcwrapper::attachEvent(libvlc_event_type_t event){

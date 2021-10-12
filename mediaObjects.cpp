@@ -367,9 +367,7 @@ void mediaPlayer::ping(){
   //Are we playing, but want another song in the queue
   else if ((mediaPlayer::isPlaying && mediaPlayer::playing_idx != mediaPlayer::currentSongPlabackQueueIdx) && (mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data.buffer.isComplete
                                    || mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data.buffer.size > mediaPlayer::bufferAdvanceSize)){
-    mediaPlayer::vlc->setMedia(&mediaPlayer::playbackQueue[mediaPlayer::currentSongPlabackQueueIdx]->data);
-    mediaPlayer::playing_idx = mediaPlayer::currentSongPlabackQueueIdx;
-    mediaPlayer::play();
+    mediaPlayer::stop();
   }
 
   //Are we neither playing nor downloading?

@@ -106,7 +106,7 @@ class mediaPlayer{
     mediaLibrary *mediaLib;
     std::thread backgroundWorker;
     song *currentSong;
-    std::size_t bufferAdvanceSize = 10000000; //How many bytes do we have to have downloaded before we begin playback
+    std::size_t bufferAdvanceSize = 1000000; //How many bytes do we have to have downloaded before we begin playback
     std::vector<song *> playbackQueue;
     int currentSongPlabackQueueIdx = 0;
     mediaPlayerState state;
