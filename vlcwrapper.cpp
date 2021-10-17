@@ -68,11 +68,15 @@ void vlcwrapper::setMedia(memoryMediaObject *mediaObject){
                                        NULL,
                                        &mediaObject->buffer);
   libvlc_media_player_set_media(vlcwrapper::mediaPlayer, vlcwrapper::media);
+  vlcwrapper::attachEvent(libvlc_MediaPlayerMediaChanged);
+  vlcwrapper::waitingOnEvent = true;
 }
 
 int vlcwrapper::play(){
   libvlc_media_player_play(vlcwrapper::mediaPlayer);
   vlcwrapper::playing = true;
+  vlcwrapper::attachEvent(libvlc_MediaPlayerPlaying);
+  vlcwrapper::waitingOnEvent = true;
 }
 
 int vlcwrapper::stop(){
@@ -91,6 +95,8 @@ void vlcwrapper::parseAsync(){
 
 void vlcwrapper::pause(){
   libvlc_media_player_pause(vlcwrapper::mediaPlayer);
+  vlcwrapper::attachEvent(libvlc_MediaPlayerPaused);
+  vlcwrapper::waitingOnEvent = true;
 }
 
 bool vlcwrapper::isPlaying(){

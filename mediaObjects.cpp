@@ -36,6 +36,11 @@ album::album(std::string album_name, std::string album_id, std::string album_art
   album::fillmetadata(album_name, album_id, album_artist);
 }
 
+album::album(std::string album_name, std::string album_id, std::string album_artist, artist *pArtist){
+  album::fillmetadata(album_name, album_id, album_artist);
+  album::pArtist = pArtist;
+}
+
 void album::fillmetadata(std::string album_name, std::string album_id, std::string album_artist){
   album::metadata["name"] = album_name;
   album::metadata["id"] = album_id;
@@ -52,6 +57,14 @@ song::song(){
 
 song::song(std::string song_title, std::string song_id, std::string song_size, std::string song_duration){
   song::fillmetadata(song_title, song_id, song_size, song_duration);
+  song::byteSize = &data.buffer.size;
+}
+
+song::song(std::string song_title, std::string song_id, std::string song_size, std::string song_duration, artist *pArtist, album *pAlbum){
+  song::fillmetadata(song_title, song_id, song_size, song_duration);
+  song::byteSize = &data.buffer.size;
+  song::pArtist = pArtist;
+  song::pAlbum = pAlbum;
 }
 
 void song::fillmetadata(std::string song_name, std::string song_id, std::string song_size, std::string song_duration){
@@ -146,7 +159,8 @@ void mediaLibrary::scanRemoteLibrary(subsonicAPI *sAPI){
           album_artist = name;
 
           //std::cout<<"Album : "<<mediaLibrary::artists.back().albums.back().metadata["name"]<<std::endl;
-          mediaLibrary::artists.back().albums.emplace_back(album_name, album_id, album_artist);
+          artist *pArtist = &(mediaLibrary::artists.back());
+          mediaLibrary::artists.back().albums.emplace_back(album_name, album_id, album_artist, pArtist);
           std::cout<<std::setfill(' ')<<std::setw(40)<<"\r"<<name<<"                                         "
                                                            <<album_name<<"                                         "<<std::flush;
 
@@ -212,7 +226,8 @@ void mediaLibrary::scanLocalLibrary(){
           album_artist = name;
 
           //std::cout<<"Album : "<<mediaLibrary::artists.back().albums.back().metadata["name"]<<std::endl;
-          mediaLibrary::artists.back().albums.emplace_back(album_name, album_id, album_artist);
+          artist *pArtist = &(mediaLibrary::artists.back());
+          mediaLibrary::artists.back().albums.emplace_back(album_name, album_id, album_artist, pArtist);
           //std::cout<<std::setfill(' ')<<std::setw(40)<<"\r"<<name<<"                                         "
             //                                               <<album_name<<"                                         "<<std::flush;
 
@@ -235,8 +250,8 @@ void mediaLibrary::scanLocalLibrary(){
             song_title = node_song->FindAttribute("name")->Value();
             song_size = node_song->FindAttribute("size")->Value();
             song_duration = node_song->FindAttribute("duration")->Value();
-
-            mediaLibrary::artists.back().albums.back().songs.emplace_back(song_title, song_id, song_size, song_duration);
+            album *pAlbum = &(mediaLibrary::artists.back().albums.back());
+            mediaLibrary::artists.back().albums.back().songs.emplace_back(song_title, song_id, song_size, song_duration, pArtist, pAlbum);
           }
       }
 
@@ -277,12 +292,21 @@ void mediaPlayer::pause(){
   mediaPlayer::isPlaying = false;
 }
 
-void mediaPlayer::addToPlaybackQueue(int artist_idx, int album_idx, int song_idx){
-    mediaPlayer::playbackQueue.push_back(mediaPlayer::getSongFromIndices(artist_idx, album_idx, song_idx));
+int mediaPlayer::addToPlaybackQueue(int artist_idx, int album_idx, int song_idx){
+  song *songToAdd = mediaPlayer::getSongFromIndices(artist_idx, album_idx, song_idx);
+  for (auto element : mediaPlayer::playbackQueue){
+    if (songToAdd->metadata["id"] == element->metadata["id"]) return -1;
+  }
+  mediaPlayer::playbackQueue.push_back(songToAdd);
+  return 0;
 }
 
-void mediaPlayer::addToPlaybackQueue(song *songToAdd){
+int mediaPlayer::addToPlaybackQueue(song *songToAdd){
+  for (auto element : mediaPlayer::playbackQueue){
+    if (songToAdd->metadata["id"] == element->metadata["id"]) return -1;
+  }
   mediaPlayer::playbackQueue.push_back(songToAdd);
+  return 0;
 }
 
 song* mediaPlayer::getSongFromIndices(int artist_idx, int album_idx, int song_idx){
@@ -300,24 +324,7 @@ void mediaPlayer::beginDownload(song *songToDownload, int index = 0){
 }
 
 void mediaPlayer::requestPlayback(int artist_idx, int album_idx, int song_idx){
-
-  mediaPlayer::addToPlaybackQueue(artist_idx, album_idx, song_idx);
-
-  /*if (mediaPlayer::playbackQueue.size() < 1) {
-    mediaPlayer::currentSong = mediaPlayer::getSongFromIndices(artist_idx, album_idx, song_idx);
-
-    /*Check if the Song is already is downloaded if yes we playback by
-    setting it as the current media in the vlc instance.
-    If not we begin the download*/
-  /*  if(mediaPlayer::currentSong->isDownloaded){
-      mediaPlayer::vlc->setMedia(&mediaPlayer::currentSong->data);
-      mediaPlayer::play();
-    }
-
-    else{
-      mediaPlayer::beginDownload(mediaPlayer::currentSong);
-    }
-  }*/
+  int ret = mediaPlayer::addToPlaybackQueue(artist_idx, album_idx, song_idx);
 }
 
 int mediaPlayer::downloadNextSongInQueue(){
@@ -330,6 +337,14 @@ int mediaPlayer::downloadNextSongInQueue(){
     }
   }
   return -1;
+}
+
+int mediaPlayer::downloadCoverArt(album *albumToGetCover){
+  if (!mediaPlayer::isDownloading){
+    mediaPlayer::backgroundWorker = std::thread(&subsonicAPI::download, mediaPlayer::sAPI, albumToGetCover->metadata["id"], &albumToGetCover->coverImage);
+    mediaPlayer::isDownloading = true;
+    mediaPlayer::download_idx = -2;
+  }
 }
 
 void mediaPlayer::ping(){
@@ -348,12 +363,13 @@ void mediaPlayer::ping(){
                (int64_t) (mediaPlayer::playbackQueue[download_idx]->data.buffer.size-mediaPlayer::bufferAdvanceSize)<<"\t"<<
                mediaPlayer::playbackQueue[download_idx]->data.buffer.size<<std::endl;
   }
+  int downloadNext = 0;
 
   //Check if current download is finished
   if (mediaPlayer::playbackQueue[mediaPlayer::download_idx]->data.buffer.isComplete){
     mediaPlayer::isDownloading = false;
     if (mediaPlayer::backgroundWorker.joinable()) mediaPlayer::backgroundWorker.join();
-    mediaPlayer::downloadNextSongInQueue();
+    downloadNext = mediaPlayer::downloadNextSongInQueue();
   }
 
   //Are we currently playing?
@@ -373,13 +389,20 @@ void mediaPlayer::ping(){
   //Are we neither playing nor downloading?
   if (!mediaPlayer::isPlaying){
     if (!mediaPlayer::isDownloading){
-      downloadNextSongInQueue();
+      downloadNext = mediaPlayer::downloadNextSongInQueue();
     }
   }
 
   //Has the Time Slider been moved ?
   if (mediaPlayer::isPlaying && (mediaPlayer::state.songPosition != mediaPlayer::songPosition)) {
     mediaPlayer::setTime(mediaPlayer::state.songPosition);
+  }
+
+  //Download Cover Art if all playback Queue Songs have been downloaded
+
+  //Song should have a pointer to album and album a pointer to artist #FIXME
+  if (downloadNext == -1){
+    //mediaPlayer::downloadCoverArt();
   }
 
   //Update State

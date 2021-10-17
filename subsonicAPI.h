@@ -35,6 +35,7 @@ class subsonicAPI{
     std::string getAlbum(std::string id);
     std::string getMusicDirectory(std::string id);
     std::string getSong(std::string id);
+    void getCoverArt(std::string id, memoryMediaObject *memObj);
     void download(std::string id, memoryMediaObject *memObj); //Should really return if successful
 
     BufferStruct last_song;

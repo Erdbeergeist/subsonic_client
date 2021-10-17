@@ -82,7 +82,7 @@ while (!glfwWindowShouldClose(window)){
   static int counter = 0;
 
   bool show_demo_window = true;
-  //ImGui::ShowDemoWindow(&show_demo_window);
+  ImGui::ShowDemoWindow(&show_demo_window);
   ImGui::Begin("Library", &close_button,
                                         (ImGuiWindowFlags_AlwaysAutoResize));
   ListBoxWrapper<artist>("###Artist", &artists_current_idx, mediaLib.artists);

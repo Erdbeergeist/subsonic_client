@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <sstream>
 #include <vector>
+#include <deque>
 #include <iostream>
 #include <string>
 #include <stdio.h>
