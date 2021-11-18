@@ -292,6 +292,11 @@ void mediaPlayer::pause(){
   mediaPlayer::isPlaying = false;
 }
 
+bool loadTextureFromImage(GLuint* out_texture, int* out_width, int* out_height){
+  //use stb_image to load image from memory, then opengl to load decompressed RGBA from RAM to GPU and set the imageTextureOnGPU Flag to indicate that we can display it via dearImgui
+  return true;
+}
+
 int mediaPlayer::addToPlaybackQueue(int artist_idx, int album_idx, int song_idx){
   song *songToAdd = mediaPlayer::getSongFromIndices(artist_idx, album_idx, song_idx);
   for (auto element : mediaPlayer::playbackQueue){
@@ -411,11 +416,11 @@ void mediaPlayer::ping(){
 
   //Song should have a pointer to album and album a pointer to artist #FIXME
   if (mediaPlayer::enableCoverDownload){
-    mediaPlayer::currentDownloadingCover_idx = mediaPlayer::downloadNextCoverInQueue();
     if (mediaPlayer::backgroundWorkerCovers.joinable()) {
       mediaPlayer::backgroundWorkerCovers.join();
       mediaPlayer::isDownloadingCover = false;
     }
+    mediaPlayer::currentDownloadingCover_idx = mediaPlayer::downloadNextCoverInQueue();
   }
 
   //Update State

@@ -1,6 +1,10 @@
 #ifndef SUBSONICCLIENT_H
 #define SUBSONICCLIENT_H
 
+//FIXME include in makefile
+//#define STB_IMAGE_IMPLEMENTATION
+//#include "stb_image.h"
+
 #include <stdlib.h>
 #include <cstdint>
 #include <sstream>
@@ -27,6 +31,8 @@
 #include "tinyxml2.h"
 #include "vlc/vlc.h"
 
+//FIXME
+typedef unsigned int  GLuint;
 
 
 

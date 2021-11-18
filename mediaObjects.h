@@ -47,10 +47,12 @@ class album{
     album(std::string album_name, std::string album_id, std::string album_artist, artist *pArtist);
     ~album();
     void fillmetadata(std::string name, std::string id, std::string artist_name);
+    bool loadTextureFromImage(GLuint* out_texture, int* out_width, int* out_height);
 
     std::map<std::string, std::string> metadata;
     std::deque<song> songs;
     memoryMediaObject coverImage;
+    bool imageTextureOnGPU = false;
     artist *pArtist;
 };
 
