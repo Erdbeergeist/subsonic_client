@@ -19,7 +19,8 @@ int main(int argc, char *argv[]) {
   mediaLibrary mediaLib;
   mediaLib.scanLocalLibrary();
   //  mediaLib.scanRemoteLibrary(&sAPI);
-
+  //sAPI.getCoverArt(mediaLib.artists[0].albums[0].metadata["id"],&mediaLib.artists[0].albums[0].coverImage);
+  //exit(1);
   //####################################VLC#####################################
   vlcwrapper vlc;
 
@@ -82,7 +83,7 @@ while (!glfwWindowShouldClose(window)){
   static int counter = 0;
 
   bool show_demo_window = true;
-  ImGui::ShowDemoWindow(&show_demo_window);
+  //ImGui::ShowDemoWindow(&show_demo_window);
   ImGui::Begin("Library", &close_button,
                                         (ImGuiWindowFlags_AlwaysAutoResize));
   ListBoxWrapper<artist>("###Artist", &artists_current_idx, mediaLib.artists);

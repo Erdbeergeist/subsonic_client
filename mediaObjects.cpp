@@ -339,11 +339,22 @@ int mediaPlayer::downloadNextSongInQueue(){
   return -1;
 }
 
+int mediaPlayer::downloadNextCoverInQueue(){
+  //Check for undownloaded songs in queue
+  for (int i = 0; i < mediaPlayer::playbackQueue.size(); i++){
+    if (!mediaPlayer::playbackQueue[i]->pAlbum->coverImage.buffer.isComplete){
+      mediaPlayer::downloadCoverArt(mediaPlayer::playbackQueue[i]->pAlbum);
+      return i;
+    }
+  }
+  return -1;
+}
+
 int mediaPlayer::downloadCoverArt(album *albumToGetCover){
-  if (!mediaPlayer::isDownloading){
-    mediaPlayer::backgroundWorker = std::thread(&subsonicAPI::download, mediaPlayer::sAPI, albumToGetCover->metadata["id"], &albumToGetCover->coverImage);
-    mediaPlayer::isDownloading = true;
-    mediaPlayer::download_idx = -2;
+  if (!mediaPlayer::isDownloadingCover){
+    mediaPlayer::backgroundWorkerCovers = std::thread(&subsonicAPI::getCoverArt, mediaPlayer::sAPI, albumToGetCover->metadata["id"], &albumToGetCover->coverImage);
+    mediaPlayer::isDownloadingCover = true;
+    //mediaPlayer::download_idx = -2;
   }
 }
 
@@ -358,10 +369,10 @@ void mediaPlayer::ping(){
   }
 
   if (mediaPlayer::isDownloading){
-    std::cout<<"MEDIA PLAYER PING: DW_NAME||DW_COMPLETE||DW_SIZE: "<<mediaPlayer::playbackQueue[download_idx]->metadata["name"]<<"\t"<<
-               mediaPlayer::playbackQueue[download_idx]->data.buffer.isComplete<<"\t"<<
-               (int64_t) (mediaPlayer::playbackQueue[download_idx]->data.buffer.size-mediaPlayer::bufferAdvanceSize)<<"\t"<<
-               mediaPlayer::playbackQueue[download_idx]->data.buffer.size<<std::endl;
+  //  std::cout<<"MEDIA PLAYER PING: DW_NAME||DW_COMPLETE||DW_SIZE: "<<mediaPlayer::playbackQueue[download_idx]->metadata["name"]<<"\t"<<
+  //             mediaPlayer::playbackQueue[download_idx]->data.buffer.isComplete<<"\t"<<
+  //             (int64_t) (mediaPlayer::playbackQueue[download_idx]->data.buffer.size-mediaPlayer::bufferAdvanceSize)<<"\t"<<
+  //             mediaPlayer::playbackQueue[download_idx]->data.buffer.size<<std::endl;
   }
   int downloadNext = 0;
 
@@ -398,11 +409,13 @@ void mediaPlayer::ping(){
     mediaPlayer::setTime(mediaPlayer::state.songPosition);
   }
 
-  //Download Cover Art if all playback Queue Songs have been downloaded
-
   //Song should have a pointer to album and album a pointer to artist #FIXME
-  if (downloadNext == -1){
-    //mediaPlayer::downloadCoverArt();
+  if (mediaPlayer::enableCoverDownload){
+    mediaPlayer::currentDownloadingCover_idx = mediaPlayer::downloadNextCoverInQueue();
+    if (mediaPlayer::backgroundWorkerCovers.joinable()) {
+      mediaPlayer::backgroundWorkerCovers.join();
+      mediaPlayer::isDownloadingCover = false;
+    }
   }
 
   //Update State

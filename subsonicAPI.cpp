@@ -129,11 +129,11 @@ void subsonicAPI::getCoverArt(std::string id, memoryMediaObject *memObj){
     p.first = "id";
     p.second = id;
     std::vector<std::pair<std::string, std::string>> parameters {p};
-    subsonicAPI::cr.perform_download(subsonicAPI::assemble_url("getCoverArt", &parameters), &memObj->buffer);
+    subsonicAPI::cr_covers.perform_download(subsonicAPI::assemble_url("getCoverArt", &parameters), &memObj->buffer);
     memObj->buffer.isComplete = true;
-    std::ofstream download;
-    download.open("cover.jpg", std::ios::out | std::ios::binary);
-    download.write(memObj->buffer.buffer, memObj->buffer.size);
+//    std::ofstream download;
+  //  download.open("cover.jpg", std::ios::out | std::ios::binary);
+  //  download.write(memObj->buffer.buffer, memObj->buffer.size);
 }
 
 void subsonicAPI::download(std::string id, memoryMediaObject *memObj){

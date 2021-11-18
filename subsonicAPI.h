@@ -52,6 +52,7 @@ class subsonicAPI{
     std::string password = "";
     std::string application_name = "";
     curlwrapper cr;
+    curlwrapper cr_covers;
 
 };
 #endif

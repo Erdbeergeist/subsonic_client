@@ -105,6 +105,7 @@ class mediaPlayer{
     void requestPlayback(int artist_idx, int album_idx, int song_idx);
     void beginDownload(song *songToDownload, int index);
     int downloadNextSongInQueue();
+    int downloadNextCoverInQueue();
     int downloadCoverArt(album *albumToGetCover);
     int setTime(int newTime);
     void ping(); //This function will initiate playback once a download has buffered enough or resume playback after a buffer pause
@@ -113,6 +114,7 @@ class mediaPlayer{
     subsonicAPI *sAPI;
     mediaLibrary *mediaLib;
     std::thread backgroundWorker;
+    std::thread backgroundWorkerCovers;
     song *currentSong;
     std::size_t bufferAdvanceSize = 1000000; //How many bytes do we have to have downloaded before we begin playback
     std::deque<song *> playbackQueue;
@@ -123,9 +125,12 @@ class mediaPlayer{
     bool isPlaying = false;
     bool isWaitingOnVLC = false;
     bool isDownloading = false;
+    bool isDownloadingCover = false;
+    bool enableCoverDownload = true;
     int download_idx = 0;
     int playing_idx = 0;
     int songPosition = 0;
+    int currentDownloadingCover_idx = 0;
 
 };
 #endif
